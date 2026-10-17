@@ -9,6 +9,17 @@ Ouvrir `index.html` dans un navigateur (ou la page GitHub Pages du dépôt), pui
 cliquer sur « Ouvrir ». Les PDF sont lus localement avec
 [pdf.js](https://mozilla.github.io/pdf.js/) : rien n'est envoyé.
 
+## Ce que montre la page
+
+- Menu ☰ : Moyenne, Points forts, Évolution, Unités d'enseignement, Matières
+  et Paramètres (nombre d'élèves dans la promo et dans ton parcours).
+- Moyennes d'UE en blanc à partir de 10, en orange entre 8 et 10, en rouge sous 8.
+- Règles 0–20 : ta note en bleu, la moyenne de la promo en orange, la meilleure
+  note en vert, la plus basse en rouge.
+- Graphique en araignée : une branche par matière, ta toile et celle de la
+  promo, avec tes 3 points forts et tes 3 points faibles.
+- Objectifs sur la moyenne générale, chaque UE, chaque matière et le classement.
+
 ## Garder ses relevés
 
 - Les relevés et objectifs restent dans le navigateur de chacun (`localStorage`) :

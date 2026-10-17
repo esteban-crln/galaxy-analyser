@@ -48,6 +48,8 @@ h2 { font-size: 1.25rem; }
 h3 { font-size: 1.02rem; font-weight: 500; }
 .muted { color: var(--muted); }
 .low { color: var(--min); }
+.mid { color: var(--promo); }
+.mine { color: var(--me); }
 button, input { font: inherit; color: inherit; }
 :focus-visible { outline: 2px solid var(--me); outline-offset: 2px; }
 
@@ -63,6 +65,32 @@ button, input { font: inherit; color: inherit; }
 .notice.over { border-color: var(--me); color: var(--ink); }
 .notice.error { border-color: var(--min); }
 .notice.error b { color: var(--min); }
+
+/* Menu */
+.brand { display: flex; align-items: center; gap: 12px; }
+.burger { cursor: pointer; width: 40px; height: 40px; border: 1px solid var(--line); border-radius: 8px; background: transparent; display: grid; place-content: center; gap: 4px; }
+.burger span { display: block; width: 18px; height: 2px; border-radius: 1px; background: var(--ink); }
+.burger:hover { background: var(--surface-2); }
+.backdrop { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.6); z-index: 25; }
+.drawer {
+  position: fixed; top: 0; bottom: 0; left: 0; z-index: 30; width: min(320px, 86vw);
+  background: var(--surface); border-right: 1px solid var(--line);
+  padding: calc(env(safe-area-inset-top, 0px) + 18px) 18px calc(env(safe-area-inset-bottom, 0px) + 18px) max(18px, env(safe-area-inset-left, 0px));
+  display: grid; align-content: start; gap: 20px; overflow-y: auto;
+  transform: translateX(-100%); visibility: hidden; transition: transform 0.2s ease, visibility 0s linear 0.2s;
+}
+.drawer.open { transform: none; visibility: visible; transition: transform 0.2s ease; }
+.drawer-head { display: flex; justify-content: space-between; align-items: center; }
+.drawer nav { display: grid; gap: 2px; }
+.drawer nav a, .drawer .navbtn { display: block; width: 100%; text-align: left; padding: 10px 12px; border-radius: 8px; color: var(--ink); text-decoration: none; background: none; border: 0; cursor: pointer; font-size: 1rem; }
+.drawer nav a:hover, .drawer .navbtn:hover { background: var(--surface-2); }
+.drawer nav a[hidden] { display: none; }
+.close { cursor: pointer; background: none; border: 0; color: var(--muted); font-size: 1.5rem; line-height: 1; padding: 4px 8px; }
+.settings-panel { display: grid; gap: 14px; padding: 4px 12px 0; }
+.settings-panel label { display: grid; gap: 6px; font-size: 0.9rem; color: var(--muted); }
+.settings-panel input { width: 6em; padding: 6px 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface-2); font-variant-numeric: tabular-nums; }
+.settings-panel p { margin: 0; font-size: 0.8rem; color: var(--muted); }
+section[id] { scroll-margin-top: 16px; }
 
 /* Relevés enregistrés */
 .history { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
@@ -105,6 +133,7 @@ button, input { font: inherit; color: inherit; }
 }
 .ticks { display: flex; flex-wrap: wrap; gap: 2px 16px; font-size: 0.84rem; font-variant-numeric: tabular-nums; }
 .ticks .min { color: var(--min); } .ticks .max { color: var(--max); } .ticks .promo { color: var(--promo); }
+.ticks.sm { font-size: 0.74rem; gap: 0 10px; margin-top: 2px; }
 .legend { display: flex; flex-wrap: wrap; gap: 4px 18px; font-size: 0.82rem; color: var(--muted); }
 .legend i { display: inline-block; width: 3px; height: 13px; border-radius: 1px; margin-right: 6px; vertical-align: -2px; }
 .legend i.tri { width: 0; height: 0; border-radius: 0; border-left: 5px solid transparent; border-right: 5px solid transparent; border-top: 7px solid var(--goal-todo); vertical-align: 0; }
@@ -173,6 +202,26 @@ details[open] > .toggle::before { content: "▾ "; }
 .spark circle { fill: var(--me); }
 .evo-table td:first-child { min-width: 140px; }
 
+/* Points forts (araignée) */
+.radar-box { background: var(--surface); border-radius: var(--radius); padding: 16px 18px; display: grid; grid-template-columns: minmax(0, 1fr) 240px; gap: 18px; align-items: center; }
+.radar { position: relative; min-width: 0; display: grid; justify-items: center; }
+.radar svg { display: block; max-width: 100%; }
+.r-ring { fill: none; stroke: var(--line); stroke-width: 1; }
+.r-ten { fill: none; stroke: var(--muted); stroke-width: 1; stroke-dasharray: 2 4; opacity: 0.7; }
+.r-axis { stroke: var(--line); stroke-width: 1; }
+.r-lab { fill: var(--muted); font-size: 11px; font-family: var(--font); }
+.r-ringlab { fill: var(--muted); font-size: 10px; font-family: var(--font); }
+.r-promo { fill: rgba(255, 165, 61, 0.08); stroke: var(--promo); stroke-width: 2; stroke-dasharray: 6 5; }
+.r-me { fill: rgba(77, 163, 255, 0.18); stroke: var(--me); stroke-width: 2; }
+.r-dot { fill: var(--me); stroke: var(--surface); stroke-width: 2; }
+.r-hit { fill: transparent; cursor: pointer; }
+.sw-list { display: grid; gap: 14px; font-size: 0.88rem; min-width: 0; }
+.sw-list > div { min-width: 0; }
+.sw-list ol { margin: 6px 0 0; padding: 0; list-style: none; display: grid; gap: 4px; }
+.sw-list li { display: flex; justify-content: space-between; gap: 10px; min-width: 0; }
+.sw-list li span:first-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sw-list .d { font-variant-numeric: tabular-nums; white-space: nowrap; color: var(--muted); }
+
 /* Matières */
 .section-head { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; justify-content: space-between; }
 .filters { display: flex; gap: 6px; }
@@ -192,8 +241,6 @@ details[open] > .toggle::before { content: "▾ "; }
 /* Bas de page */
 .about { font-size: 0.9rem; color: var(--muted); }
 .about p { margin: 10px 0 0; max-width: 68ch; }
-.about .settings { display: flex; flex-wrap: wrap; gap: 10px 18px; margin-top: 14px; align-items: center; }
-.about .settings input { width: 4.5em; margin-left: 6px; padding: 4px 8px; border-radius: 6px; border: 1px solid var(--line); background: var(--surface); font-variant-numeric: tabular-nums; }
 .about pre { font-size: 0.75rem; background: var(--surface); border-radius: 8px; padding: 12px; overflow-x: auto; max-height: 340px; color: var(--muted); }
 
 @media (max-width: 720px) {
@@ -204,6 +251,7 @@ details[open] > .toggle::before { content: "▾ "; }
   .subj > summary .rk { grid-column: 1 / -1; text-align: left; }
   .subj .body { padding: 0 16px 14px; }
   .evo-table th:nth-child(2), .evo-table td:nth-child(2) { display: none; }
+  .radar-box { grid-template-columns: minmax(0, 1fr); }
   .evo-table td:first-child { min-width: 0; }
 }
 @media (prefers-reduced-motion: reduce) {
@@ -214,7 +262,10 @@ details[open] > .toggle::before { content: "▾ "; }
 <div class="wrap">
   <div class="top-head">
     <header class="top">
-      <h1>Lecteur de notes R&amp;T</h1>
+      <div class="brand">
+        <button class="burger" id="menuBtn" type="button" aria-label="Ouvrir le menu" aria-expanded="false" aria-controls="drawer"><span></span><span></span><span></span></button>
+        <h1>Lecteur de notes R&amp;T</h1>
+      </div>
       <button class="btn" id="pickBtn" type="button">Ouvrir</button>
       <input type="file" id="fileInput" accept=".pdf,.json,.zip,application/pdf,application/json,application/zip" multiple hidden>
     </header>
@@ -227,9 +278,43 @@ details[open] > .toggle::before { content: "▾ "; }
     <div class="history" id="history"></div>
   </div>
 
+  <div class="backdrop" id="backdrop" hidden></div>
+  <aside class="drawer" id="drawer" aria-label="Menu">
+    <div class="drawer-head"><span class="label">Menu</span><button class="close" id="menuClose" type="button" aria-label="Fermer le menu">×</button></div>
+    <nav>
+      <a href="#summary" data-go="summary">Moyenne</a>
+      <a href="#sec-radar" data-go="sec-radar" id="navRadar">Points forts</a>
+      <a href="#evo" data-go="evo" id="navEvo">Évolution</a>
+      <a href="#sec-ue" data-go="sec-ue">Unités d'enseignement</a>
+      <a href="#sec-mat" data-go="sec-mat">Matières</a>
+    </nav>
+    <div>
+      <span class="label" style="padding:0 12px">Paramètres</span>
+      <div class="settings-panel" style="margin-top:10px">
+        <label for="promoSize">Élèves dans la promo<input id="promoSize" type="number" min="2" max="200" value="28"></label>
+        <label for="parcoursSize"><span id="parcoursLabel">Élèves dans ton parcours</span><input id="parcoursSize" type="number" min="2" max="200" value="14"></label>
+        <p>Ces nombres servent à estimer ton rang. Le parcours compte pour les UE et matières propres à ton parcours.</p>
+      </div>
+    </div>
+  </aside>
+
   <section class="student" id="student"></section>
 
   <section class="summary" id="summary"></section>
+
+  <section id="sec-radar" hidden>
+    <div class="section-head">
+      <h2>Points forts et points faibles</h2>
+      <div class="legend">
+        <span><i class="line" style="background:var(--me)"></i>toi</span>
+        <span><i class="dash"></i>moyenne promo</span>
+      </div>
+    </div>
+    <div class="radar-box" style="margin-top:14px">
+      <div class="radar" id="radar"></div>
+      <div class="sw-list" id="swList"></div>
+    </div>
+  </section>
 
   <section class="evo" id="evo" hidden>
     <div class="section-head">
@@ -246,7 +331,7 @@ details[open] > .toggle::before { content: "▾ "; }
     </div>
   </section>
 
-  <section>
+  <section id="sec-ue">
     <div class="section-head">
       <h2>Unités d'enseignement</h2>
       <div class="legend">
@@ -260,7 +345,7 @@ details[open] > .toggle::before { content: "▾ "; }
     <div class="ue-grid" id="ues"></div>
   </section>
 
-  <section>
+  <section id="sec-mat">
     <div class="section-head">
       <h2>Matières</h2>
       <div class="filters" role="group" aria-label="Filtrer les matières">
@@ -278,10 +363,7 @@ details[open] > .toggle::before { content: "▾ "; }
       <p>Tes relevés et tes objectifs restent dans ce navigateur, sur cet appareil. Ils sont toujours là si tu fermes la page ou éteins l'ordinateur, mais pas sur un autre appareil ni si tu vides les données du navigateur. « Sauvegarder » télécharge un seul fichier, mes-releves.json, avec tout dedans : rouvre-le avec « Ouvrir » pour tout retrouver. « Ouvrir » accepte aussi plusieurs PDF d'un coup ou un .zip de PDF.</p>
       <p>Les moyennes de matière et d'UE sont celles du relevé : pondérées par les coefficients, sur les notes déjà saisies. La moyenne générale est la moyenne simple de tes UE notées (le BUT valide chaque UE séparément, à partir de 10). Les flèches ▲ ▼ comparent au relevé précédent du même semestre.</p>
       <p>Le relevé ne contient pas les notes des autres, seulement la moyenne, la plus haute et la plus basse. Le rang est estimé en supposant une répartition en cloche autour de la moyenne de la promo. C'est un ordre de grandeur, pas un classement officiel.</p>
-      <div class="settings">
-        <label for="promoSize">Élèves dans la promo<input id="promoSize" type="number" min="2" max="200" value="28"></label>
-        <label for="parcoursSize">Élèves dans ton parcours<input id="parcoursSize" type="number" min="2" max="200" value="14"></label>
-      </div>
+      <p>La taille de la promo et de ton parcours, utilisée pour le rang, se règle dans le menu ☰ → Paramètres.</p>
       <details style="margin-top:14px">
         <summary class="toggle">Données lues dans le PDF</summary>
         <pre id="rawJson"></pre>
@@ -375,7 +457,7 @@ details[open] > .toggle::before { content: "▾ "; }
     state.history = [];
     addEntry(demoData(false));
     state.cur = addEntry(demoData(true));
-    state.demoGoals = { "S5|R509": 12, "S5|R505": 15, "S5|MOY": 12 };
+    state.demoGoals = { "S5|R509": 12, "S5|R505": 15, "S5|MOY": 12, "S5|RANG": 8 };
   }
 
   /* ---------- Outils ---------- */
@@ -383,7 +465,13 @@ details[open] > .toggle::before { content: "▾ "; }
   function fmtG(g) { return Math.round(g * 100) % 100 ? fmt(g, Math.round(g * 100) % 10 ? 2 : 1) : String(Math.round(g)); }
   function esc(s) { return String(s == null ? "" : s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
   function hasPromo(a) { return a && a.moy != null && a.max != null && a.max > 0; }
-  function low(v) { return v != null && v < 10 ? "low" : ""; }
+  // Moyenne d'UE : blanche à partir de 10, orange entre 8 et 10, rouge sous 8
+  function ueTone(v) { return v == null ? "muted" : v >= 10 ? "" : v >= 8 ? "mid" : "low"; }
+  // Tes notes de matière, toujours en bleu comme ton curseur
+  function mine(v) { return v != null ? "mine" : ""; }
+  function ticks(a, sm) {
+    return hasPromo(a) ? '<div class="ticks' + (sm ? " sm" : "") + '"><span class="min">' + fmt(a.min) + '</span><span class="promo">promo ' + fmt(a.moy) + '</span><span class="max">' + fmt(a.max) + "</span></div>" : "";
+  }
   function coefTxt(c) { return c == null ? "—" : fmt(c, c % 1 ? 1 : 0); }
   function cell(c) { return c.value == null && c.raw ? esc(c.raw) : fmt(c.value); }
   function parseNum(s) { var t = String(s).trim().replace(",", "."); return /^\d+(\.\d+)?$/.test(t) ? parseFloat(t) : NaN; }
@@ -499,15 +587,39 @@ details[open] > .toggle::before { content: "▾ "; }
 
   /* ---------- Objectifs ---------- */
   function goalState(g, v) { return g == null ? null : v != null && v >= g - 0.005 ? "ok" : "todo"; }
-  function goalHtml(key, v) {
-    var g = goals()[key];
-    if (state.editing === key) {
-      return '<span class="goal-edit"><label for="goalInput">Objectif</label>' +
-        '<input id="goalInput" type="text" inputmode="decimal" autocomplete="off" placeholder="ex. 15" value="' + (g != null ? fmtG(g) : "") + '" data-key="' + esc(key) + '"> / 20' +
+  function isRankKey(key) { return /\|RANG$/.test(key); }
+  function goalEditor(key, g) {
+    var rank = isRankKey(key);
+    return '<span class="goal-edit"><label for="goalInput">' + (rank ? "Objectif de classement" : "Objectif") + '</label>' +
+        '<input id="goalInput" type="text" inputmode="' + (rank ? "numeric" : "decimal") + '" autocomplete="off" placeholder="ex. ' + (rank ? "10" : "15") + '" value="' + (g != null ? fmtG(g) : "") + '" data-key="' + esc(key) + '">' + (rank ? "e / " + state.promo : " / 20") +
         '<button class="btn sm" type="button" data-goal-save="' + esc(key) + '">OK</button>' +
         (g != null ? '<button class="link" type="button" data-goal-remove="' + esc(key) + '">Retirer</button>' : "") +
         '<button class="link" type="button" data-goal-cancel>Annuler</button></span>';
+  }
+  // Objectif de rang : atteint quand le rang estimé est au moins aussi bon ; sinon, moyenne générale à viser
+  function rankGoalHtml(key, rG, A) {
+    var g = goals()[key];
+    if (state.editing === key) return goalEditor(key, g);
+    if (g == null) return '<button class="link" type="button" data-goal-edit="' + esc(key) + '">+ Objectif de classement</button>';
+    var txt, st;
+    if (!rG) { st = "todo"; txt = "Objectif " + ordinal(g); }
+    else if (rG.mid <= g) { st = "ok"; txt = "Objectif " + ordinal(g) + " atteint"; }
+    else {
+      st = "todo";
+      var places = rG.mid - g;
+      txt = "Objectif " + ordinal(g) + " · encore " + places + " place" + (places > 1 ? "s" : "");
+      if (A.sigma && A.pm != null) {
+        var n = state.promo, q = Math.min(0.999, Math.max(0.001, (g - 0.51) / (n - 1)));
+        var need = A.pm + invPhi(1 - q) * A.sigma;
+        if (need <= 20) txt += " (≈ " + fmt(need) + " de moyenne)";
+      }
     }
+    return '<span class="goal ' + st + '">' + txt + '</span><button class="link" type="button" data-goal-edit="' + esc(key) + '">modifier</button>';
+  }
+  function ordinal(r) { return r === 1 ? "1er" : r + "e"; }
+  function goalHtml(key, v) {
+    var g = goals()[key];
+    if (state.editing === key) return goalEditor(key, g);
     if (g == null) return '<button class="link" type="button" data-goal-edit="' + esc(key) + '">+ Fixer un objectif</button>';
     var st = goalState(g, v);
     var txt = st === "ok" ? "Objectif " + fmtG(g) + " atteint" : v == null ? "Objectif " + fmtG(g) : "Objectif " + fmtG(g) + " · encore +" + fmt(g - v);
@@ -565,6 +677,7 @@ details[open] > .toggle::before { content: "▾ "; }
     };
     var G = goals();
 
+    $("parcoursLabel").textContent = "Élèves dans ton parcours" + (A.parcours ? " (" + A.parcours + ")" : "");
     var meta = [d.semester, A.parcours ? "Parcours " + A.parcours : null, d.editedAt ? "relevé du " + d.editedAt.split(" ")[0] : null].filter(Boolean);
     $("student").innerHTML = '<div class="who">' + esc(d.student.name || "Étudiant") + '</div><div class="meta">' + esc(meta.join(" · ")) + "</div>";
 
@@ -574,32 +687,34 @@ details[open] > .toggle::before { content: "▾ "; }
     var kMoy = gkey(d, "MOY");
     $("summary").innerHTML =
       '<div class="tile"><span class="label">Moyenne générale</span>' +
-        '<div class="big ' + low(A.mg) + '">' + fmt(A.mg) + ' <small>/ 20</small> ' + deltaHtml(A.mg, P && P.mg, since) + '</div>' +
+        '<div class="big ' + ueTone(A.mg) + '">' + fmt(A.mg) + ' <small>/ 20</small> ' + deltaHtml(A.mg, P && P.mg, since) + '</div>' +
         '<div class="ticks"><span class="promo">promo ' + fmt(A.pm) + '</span>' +
         (diff != null ? '<span class="muted">' + (diff >= 0 ? "+" : "−") + fmt(Math.abs(diff)) + ' par rapport à la promo</span>' : "") + '</div>' +
         '<div class="goal-row">' + goalHtml(kMoy, A.mg) + '</div></div>' +
       '<div class="tile"><span class="label">Classement estimé</span>' +
         '<div class="big">' + (rG ? (rG.mid === 1 ? "1<small>er</small>" : rG.mid + "<small>e</small>") : "—") + ' <small>sur ' + state.promo + '</small></div>' +
-        '<div class="ticks muted">' + (rG && rG.lo !== rG.hi ? "Probablement entre " + rG.lo + "e et " + rG.hi + "e" : rG ? "" : "Pas encore assez de notes") + '</div></div>';
+        '<div class="ticks muted">' + (rG && rG.lo !== rG.hi ? "Probablement entre " + rG.lo + "e et " + rG.hi + "e" : rG ? "" : "Pas encore assez de notes") + '</div>' +
+        '<div class="goal-row">' + rankGoalHtml(gkey(d, "RANG"), rG, A) + '</div></div>';
 
+    renderRadar(d, A);
     renderEvo();
 
     // UE
     $("ues").innerHTML = A.myUes.map(function (u) {
       var v = u.avg.value, a = u.avg, key = gkey(d, u.code), goal = G[key];
-      var target = goal != null ? goal : 10;
       var total = u.coefTotal || u.components.reduce(function (s, c) { return s + (c.coef || 0); }, 0);
-      var foot = v == null ? "Pas encore de note" : needText(needOnRest(u.components, v, target, total), target);
+      // « Pour X : … sur le reste » seulement quand un objectif est fixé et pas encore atteint
+      var foot = v == null ? "Pas encore de note" : goalState(goal, v) === "todo" ? needText(needOnRest(u.components, v, goal, total), goal) : "";
       var r = hasPromo(a) ? estimateRank(v, a.moy, a.max, groupSize(u.code)) : null;
       var rows = u.components.map(function (c) {
         return '<tr class="' + (c.value == null ? "empty" : "") + '"><td>' + esc(linkName(c.label, A.byCode) || c.label) + ' <span class="muted">' + esc(c.label) + '</span></td>' +
-          '<td class="n">' + coefTxt(c.coef) + '</td><td class="n ' + low(c.value) + '">' + cell(c) + '</td></tr>';
+          '<td class="n">' + coefTxt(c.coef) + '</td><td class="n ' + mine(c.value) + '">' + cell(c) + '</td></tr>';
       }).join("");
       return '<article class="ue">' +
         '<div class="ue-top"><div><div class="code">' + esc(u.code) + '</div><h3>' + esc(title(u.name)) + '</h3></div>' +
-        '<div><div class="avg ' + (v == null ? "muted" : low(v)) + '">' + fmt(v) + '</div>' + deltaHtml(v, prevVal(u.code), since) + '</div></div>' +
+        '<div><div class="avg ' + ueTone(v) + '">' + fmt(v) + '</div>' + deltaHtml(v, prevVal(u.code), since) + '</div></div>' +
         scale(v, a, true, goal) +
-        (hasPromo(a) ? '<div class="ticks"><span class="min">' + fmt(a.min) + '</span><span class="promo">promo ' + fmt(a.moy) + '</span><span class="max">' + fmt(a.max) + '</span></div>' : "") +
+        ticks(a) +
         '<div class="foot">' + (r ? '<span>Rang <b>' + rankText(r) + '</b></span>' : "") + (foot ? "<span>" + foot + "</span>" : "") + '</div>' +
         '<div class="goal-row">' + goalHtml(key, v) + '</div>' +
         (u.components.length ? '<details data-k="u:' + esc(u.code) + '"><summary class="toggle">Détail</summary><div class="table-scroll"><table class="comp"><thead><tr><th>Matière</th><th class="n">Coef.</th><th class="n">Toi</th></tr></thead><tbody>' + rows + '</tbody></table></div></details>' : "") +
@@ -616,19 +731,22 @@ details[open] > .toggle::before { content: "▾ "; }
       var r = hasPromo(a) ? estimateRank(v, a.moy, a.max, groupSize(g.code)) : null;
       var rows = g.components.map(function (c) {
         return '<tr class="' + (c.value == null ? "empty" : "") + '"><td>' + esc(c.label) + '</td><td class="n">' + coefTxt(c.coef) + '</td>' +
-          '<td class="n ' + low(c.value) + '">' + cell(c) + '</td><td class="n" style="color:var(--promo)">' + fmt(c.moy) + '</td>' +
+          '<td class="n ' + mine(c.value) + '">' + cell(c) + '</td>' +
+          '<td class="n" style="color:var(--min)">' + fmt(hasPromo(c) ? c.min : null) + '</td>' +
+          '<td class="n" style="color:var(--promo)">' + fmt(c.moy) + '</td>' +
+          '<td class="n" style="color:var(--max)">' + fmt(hasPromo(c) ? c.max : null) + '</td>' +
           '<td class="sc">' + scale(c.value, { min: c.min, max: c.max, moy: c.moy }) + '</td></tr>';
       }).join("");
       var need = goal != null && goalState(goal, v) === "todo" ? needText(needOnRest(g.components, v, goal), goal) : "";
       var body = '<div class="goal-row">' + goalHtml(key, v) + (need ? "<span>" + need + "</span>" : "") + '</div>' +
         (g.components.length ?
-          '<div class="table-scroll"><table class="comp"><thead><tr><th>Évaluation</th><th class="n">Coef.</th><th class="n">Toi</th><th class="n">Promo</th><th></th></tr></thead><tbody>' + rows + '</tbody></table></div>' :
+          '<div class="table-scroll"><table class="comp"><thead><tr><th>Évaluation</th><th class="n">Coef.</th><th class="n">Toi</th><th class="n">Plus basse</th><th class="n">Promo</th><th class="n">Meilleure</th><th></th></tr></thead><tbody>' + rows + '</tbody></table></div>' :
           '<p class="muted" style="margin:0;font-size:.88rem">Pas de détail des évaluations pour cette matière.</p>');
       var badge = goal != null ? '<span class="goal mini ' + goalState(goal, v) + '">Objectif ' + fmtG(goal) + (goalState(goal, v) === "ok" ? " atteint" : "") + '</span>' : "";
       return '<details class="subj" data-k="s:' + esc(g.code) + '"><summary>' +
         '<span style="min-width:0"><span class="code">' + esc(g.code) + '</span><span class="nm">' + esc(g.name || g.code) + '</span>' + badge + '</span>' +
-        '<span class="val ' + low(v) + '">' + fmt(v) + deltaHtml(v, prevVal(g.code), since) + '</span>' +
-        '<span class="sc">' + scale(v, a, false, goal) + '</span>' +
+        '<span class="val ' + mine(v) + '">' + fmt(v) + deltaHtml(v, prevVal(g.code), since) + '</span>' +
+        '<span class="sc">' + scale(v, a, false, goal) + ticks(a, true) + '</span>' +
         '<span class="rk">' + rankText(r) + '</span>' +
         '</summary><div class="body">' + body + '</div></details>';
     }).join("") : '<p class="empty-msg">Aucune note pour l\'instant.</p>';
@@ -644,6 +762,7 @@ details[open] > .toggle::before { content: "▾ "; }
   /* ---------- Évolution ---------- */
   var chartPts = null;
   function renderEvo() {
+    $("navEvo").hidden = state.history.length < 2;
     if (state.history.length < 2) { $("evo").hidden = true; chartPts = null; return; }
     $("evo").hidden = false;
     var cur = curEntry();
@@ -671,7 +790,7 @@ details[open] > .toggle::before { content: "▾ "; }
         for (var i = 0; i < state.history.length; i++) if (vals[i] != null) idx.push(i);
         var first = vals[idx[0]], last = vals[idx[idx.length - 1]];
         return '<tr><td>' + esc(comps[k].name) + '</td><td>' + spark(vals, state.history.length) + '</td>' +
-          '<td class="n">' + (idx.length > 1 ? fmt(first) + " → " : "") + '<span class="' + low(last) + '">' + fmt(last) + '</span></td>' +
+          '<td class="n">' + (idx.length > 1 ? fmt(first) + " → " : "") + '<span class="' + ueTone(last) + '">' + fmt(last) + '</span></td>' +
           '<td class="n">' + (idx.length > 1 ? deltaHtml(last, first, "premier relevé") : '<span class="delta">un seul relevé</span>') + '</td></tr>';
       }).join("") + "</tbody></table>" : '<p class="muted" style="margin:0">Pas encore de moyenne d\'UE à comparer.</p>';
   }
@@ -754,8 +873,70 @@ details[open] > .toggle::before { content: "▾ "; }
     };
     el.onmouseleave = hide;
   }
+  /* ---------- Araignée : une branche par matière, ta toile et celle de la promo ---------- */
+  var radarPts = null;
+  function renderRadar(d, A) {
+    var list = d.groups.filter(function (g) { return g.kind !== "ue" && A.mine(g) && g.avg.value != null && hasPromo(g.avg); });
+    var show = list.length >= 3;
+    $("sec-radar").hidden = !show;
+    $("navRadar").hidden = !show;
+    if (!show) { radarPts = null; return; }
+    radarPts = list.map(function (g) { return { code: g.code, name: g.name || g.code, toi: g.avg.value, promo: g.avg.moy }; });
+    drawRadar();
+    var byGap = radarPts.slice().sort(function (a, b) { return (b.toi - b.promo) - (a.toi - a.promo); });
+    var n = Math.min(3, Math.floor(byGap.length / 2));
+    function item(p) {
+      var dd = p.toi - p.promo;
+      return '<li><span title="' + esc(p.name) + '">' + esc(p.name) + '</span><span class="d">' + (dd >= 0 ? "+" : "−") + fmt(Math.abs(dd)) + "</span></li>";
+    }
+    $("swList").innerHTML =
+      '<div><span class="label">Points forts</span><ol>' + byGap.slice(0, n).map(item).join("") + "</ol></div>" +
+      '<div><span class="label">Points faibles</span><ol>' + byGap.slice(-n).reverse().map(item).join("") + "</ol></div>";
+  }
+  function drawRadar() {
+    var el = $("radar"), pts = radarPts;
+    if (!pts) return;
+    // Place pour les étiquettes à gauche et à droite : codes sur téléphone, noms courts sinon
+    var W = Math.max(280, Math.min(el.clientWidth || 560, 660));
+    var narrow = W < 480, side = narrow ? 64 : 128;
+    var R = Math.max(80, Math.min(W / 2 - side, 220)), H = 2 * R + 56, cx = W / 2, cy = H / 2, n = pts.length;
+    var ang = function (i) { return -Math.PI / 2 + i * 2 * Math.PI / n; };
+    var pt = function (i, v) { var r = R * Math.max(0, Math.min(20, v)) / 20; return [cx + r * Math.cos(ang(i)), cy + r * Math.sin(ang(i))]; };
+    var poly = function (k) { return pts.map(function (p, i) { return pt(i, p[k]).map(function (x) { return x.toFixed(1); }).join(","); }).join(" "); };
+    var s = '<svg width="' + W + '" height="' + H + '" viewBox="0 0 ' + W + " " + H + '" role="img" aria-label="Tes moyennes par matière comparées à la promo">';
+    [5, 10, 15, 20].forEach(function (v) {
+      s += '<polygon class="' + (v === 10 ? "r-ten" : "r-ring") + '" points="' + pts.map(function (p, i) { return pt(i, v).join(","); }).join(" ") + '"/>';
+      s += '<text class="r-ringlab" x="' + (cx + 4) + '" y="' + (cy - R * v / 20 + 11) + '">' + v + "</text>";
+    });
+    pts.forEach(function (p, i) {
+      var e = pt(i, 20);
+      s += '<line class="r-axis" x1="' + cx + '" y1="' + cy + '" x2="' + e[0] + '" y2="' + e[1] + '"/>';
+      var l = pt(i, 20 + (narrow ? 2.2 : 1.6)), c = Math.cos(ang(i));
+      var anchor = Math.abs(c) < 0.3 ? "middle" : c > 0 ? "start" : "end";
+      var label = narrow ? p.code : (p.name.length > 18 ? p.name.slice(0, 17) + "…" : p.name);
+      s += '<text class="r-lab" x="' + l[0].toFixed(1) + '" y="' + (l[1] + 4).toFixed(1) + '" text-anchor="' + anchor + '">' + esc(label) + "</text>";
+    });
+    s += '<polygon class="r-promo" points="' + poly("promo") + '"/><polygon class="r-me" points="' + poly("toi") + '"/>';
+    pts.forEach(function (p, i) { var q = pt(i, p.toi); s += '<circle class="r-dot" cx="' + q[0].toFixed(1) + '" cy="' + q[1].toFixed(1) + '" r="4"/>'; });
+    pts.forEach(function (p, i) { var q = pt(i, 20); s += '<circle class="r-hit" data-i="' + i + '" cx="' + q[0].toFixed(1) + '" cy="' + q[1].toFixed(1) + '" r="' + Math.max(14, Math.min(28, Math.PI * R / n)) + '"/>'; });
+    el.innerHTML = s + '</svg><div class="tip" id="rtip" hidden></div>';
+    function show(i) {
+      var p = pts[i], tip = $("rtip"), q = pt(i, Math.max(p.toi, p.promo));
+      tip.innerHTML = "<b>" + esc(p.code) + "</b> " + esc(p.name.length > 34 ? p.name.slice(0, 33) + "…" : p.name) + "<br>" +
+        '<span class="k" style="background:var(--me)"></span>Toi ' + fmt(p.toi) + "<br>" +
+        '<span class="k" style="background:var(--promo)"></span>Promo ' + fmt(p.promo);
+      tip.hidden = false;
+      var off = (el.clientWidth - W) / 2;
+      tip.style.left = Math.max(90, Math.min(el.clientWidth - 90, off + q[0])) + "px";
+      tip.style.top = Math.max(60, q[1]) + "px";
+    }
+    el.onmousemove = function (e) { var r = e.target.closest && e.target.closest(".r-hit"); if (r) show(+r.getAttribute("data-i")); else $("rtip").hidden = true; };
+    el.onclick = el.onmousemove;
+    el.onmouseleave = function () { $("rtip").hidden = true; };
+  }
+
   var resizeTimer = null;
-  window.addEventListener("resize", function () { clearTimeout(resizeTimer); resizeTimer = setTimeout(drawChart, 150); });
+  window.addEventListener("resize", function () { clearTimeout(resizeTimer); resizeTimer = setTimeout(function () { drawChart(); drawRadar(); }, 150); });
 
   /* ---------- Messages ---------- */
   function notice(kind, titleHtml, text) {
@@ -888,6 +1069,26 @@ details[open] > .toggle::before { content: "▾ "; }
     notice("", "Sauvegarde téléchargée : " + name + ".", "Garde ce fichier, par exemple avec tes PDF. Pour tout retrouver, ouvre-le avec « Ouvrir ».");
   }
 
+  /* ---------- Menu ---------- */
+  function setMenu(open) {
+    $("drawer").classList.toggle("open", open);
+    $("backdrop").hidden = !open;
+    $("menuBtn").setAttribute("aria-expanded", String(open));
+    if (open) $("menuClose").focus(); else $("menuBtn").focus();
+  }
+  $("menuBtn").addEventListener("click", function () { setMenu(true); });
+  $("menuClose").addEventListener("click", function () { setMenu(false); });
+  $("backdrop").addEventListener("click", function () { setMenu(false); });
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape" && $("drawer").classList.contains("open")) setMenu(false); });
+  [].forEach.call(document.querySelectorAll("[data-go]"), function (a) {
+    a.addEventListener("click", function (e) {
+      e.preventDefault();
+      setMenu(false);
+      var target = $(a.getAttribute("data-go"));
+      if (target) target.scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" });
+    });
+  });
+
   /* ---------- Événements ---------- */
   var input = $("fileInput");
   $("pickBtn").addEventListener("click", function () { input.click(); });
@@ -903,7 +1104,8 @@ details[open] > .toggle::before { content: "▾ "; }
   function saveGoal(key) {
     var inp = $("goalInput");
     var g = parseNum(inp ? inp.value : "");
-    if (isNaN(g) || g < 0 || g > 20) { if (inp) { inp.setAttribute("aria-invalid", "true"); inp.focus(); } return; }
+    var bad = isRankKey(key) ? (isNaN(g) || g < 1 || g > state.promo || g % 1) : (isNaN(g) || g < 0 || g > 20);
+    if (bad) { if (inp) { inp.setAttribute("aria-invalid", "true"); inp.focus(); } return; }
     goals()[key] = Math.round(g * 100) / 100;
     state.editing = null;
     if (!state.demo) { state.dirty = true; persist(); }
