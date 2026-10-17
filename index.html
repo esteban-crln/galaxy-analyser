@@ -302,7 +302,7 @@ details[open] > .toggle::before { content: "▾ "; }
       <span class="label" style="padding:0 12px">Paramètres</span>
       <div class="settings-panel" style="margin-top:10px">
         <label for="promoSize">Élèves dans la promo<input id="promoSize" type="number" min="2" max="200" value="28"></label>
-        <label for="parcoursSize"><span id="parcoursLabel">Élèves dans ton parcours</span><input id="parcoursSize" type="number" min="2" max="200" value="14"></label>
+        <label for="parcoursSize"><span>Élèves dans ton parcours (ex. Cyber, IOM…)</span><input id="parcoursSize" type="number" min="2" max="200" value="14"></label>
         <p>Ces nombres servent à estimer ton rang. Le parcours compte pour les UE et matières propres à ton parcours.</p>
       </div>
     </div>
@@ -688,7 +688,6 @@ details[open] > .toggle::before { content: "▾ "; }
     };
     var G = goals();
 
-    $("parcoursLabel").textContent = "Élèves dans ton parcours" + (A.parcours ? " (" + A.parcours + ")" : "");
     var meta = [d.semester, A.parcours ? "Parcours " + A.parcours : null, d.editedAt ? "relevé du " + d.editedAt.split(" ")[0] : null].filter(Boolean);
     $("student").innerHTML = '<div class="who">' + esc(d.student.name || "Étudiant") + '</div><div class="meta">' + esc(meta.join(" · ")) + "</div>";
 
@@ -753,7 +752,7 @@ details[open] > .toggle::before { content: "▾ "; }
         return '<tr class="' + (c.value == null ? "empty" : "") + '"><td>' + esc(c.label) + '</td><td class="n">' + coefTxt(c.coef) + '</td>' +
           '<td class="n ' + mine(c.value) + '">' + cell(c) + '</td>' +
           '<td class="n" style="color:var(--promo)">' + fmt(c.moy) + '</td>' +
-          '<td class="n wide muted">' + (hasPromo(ca) ? fmt(c.min) + " – " + fmt(c.max) : "—") + '</td>' +
+          '<td class="n wide">' + (hasPromo(ca) ? '<span style="color:var(--min)">' + fmt(c.min) + '</span> – <span style="color:var(--max)">' + fmt(c.max) + "</span>" : '<span class="muted">—</span>') + '</td>' +
           '<td class="sc">' + scale(c.value, ca) + '</td></tr>';
       }).join("");
       var need = goalState(goal, v) === "todo" ? needText(needOnRest(g.components, v, goal), goal) : "";
