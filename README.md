@@ -5,7 +5,7 @@ le tableur Excel du département) et l'affiche de façon lisible : moyennes par 
 et par matière, position par rapport à la promo, classement estimé, évolution
 d'un relevé à l'autre et objectifs personnels.
 
-**Site :** https://esteban-crln.github.io/Galaxy-analyser/
+**Site :** https://esteban-crln.github.io/galaxy-analyser/
 
 ## Utilisation
 
