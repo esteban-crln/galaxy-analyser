@@ -1,0 +1,977 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+</head>
+<body>
+<!-- ARTIFACT:START -->
+<title>Lecteur de notes R&amp;T</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lexend:wght@300..700&display=swap">
+<style>
+/* Layout : une colonne sur fond noir — relevés, synthèse, évolution, cartes UE, matières. Chaque note se lit sur une règle 0–20. */
+:root {
+  --bg: #0a0c0f;
+  --surface: #13161b;
+  --surface-2: #1a1e24;
+  --line: #252a32;
+  --ink: #f5f7fa;
+  --muted: #98a1ad;
+  --track: #2b313a;
+  --range: #3a414c;
+  --me: #4da3ff;
+  --me-glow: rgba(77, 163, 255, 0.85);
+  --max: #3ddc84;
+  --min: #ff5c5c;
+  --promo: #ffa53d;
+  --goal-ok: #ff94d4;
+  --goal-todo: #e6ebf2;
+  --font: "Lexend", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --radius: 12px;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 400 16px/1.55 var(--font); }
+.wrap {
+  max-width: 1000px; margin: 0 auto; display: grid; gap: 32px;
+  padding-block: 22px 56px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+h1, h2, h3 { margin: 0; font-weight: 600; line-height: 1.2; text-wrap: balance; }
+h1 { font-size: 1.15rem; }
+h2 { font-size: 1.25rem; }
+h3 { font-size: 1.02rem; font-weight: 500; }
+.muted { color: var(--muted); }
+.low { color: var(--min); }
+button, input { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--me); outline-offset: 2px; }
+
+/* Haut de page */
+.top { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; }
+.btn { cursor: pointer; border: 0; border-radius: 8px; padding: 10px 18px; font-weight: 600; background: var(--me); color: #06121f; }
+.btn:hover { filter: brightness(1.1); }
+.btn.ghost { background: transparent; color: var(--me); border: 1px solid var(--me); }
+.btn.sm { padding: 5px 12px; font-size: 0.86rem; border-radius: 999px; }
+.top-head { display: grid; gap: 14px; }
+.notice { display: flex; flex-wrap: wrap; gap: 4px 14px; align-items: baseline; padding: 12px 16px; border: 1px dashed var(--line); border-radius: var(--radius); color: var(--muted); font-size: 0.92rem; }
+.notice b { color: var(--ink); font-weight: 600; }
+.notice.over { border-color: var(--me); color: var(--ink); }
+.notice.error { border-color: var(--min); }
+.notice.error b { color: var(--min); }
+
+/* Relevés enregistrés */
+.history { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.history .label { margin-right: 4px; }
+.rel { display: inline-flex; align-items: center; border: 1px solid var(--line); border-radius: 999px; overflow: hidden; }
+.rel button { cursor: pointer; background: transparent; border: 0; color: var(--muted); font-size: 0.86rem; padding: 5px 12px; }
+.rel .x { padding: 5px 11px 5px 2px; }
+.rel .x.confirm { color: var(--min); padding-left: 8px; }
+.rel.on { border-color: var(--me); }
+.rel.on .pick { color: var(--ink); }
+.hint { font-size: 0.82rem; color: var(--muted); }
+
+.student .who { font-size: 1.7rem; font-weight: 600; }
+.student .meta { color: var(--muted); margin-top: 2px; }
+
+/* Synthèse */
+.summary { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.tile { background: var(--surface); border-radius: var(--radius); padding: 20px 22px; display: grid; gap: 10px; align-content: start; min-width: 0; }
+.label { font-size: 0.8rem; color: var(--muted); }
+.big { font-size: 3rem; font-weight: 600; line-height: 1; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
+.big small { font-size: 1.05rem; color: var(--muted); font-weight: 400; letter-spacing: 0; }
+.delta { font-size: 0.82rem; color: var(--muted); font-weight: 400; font-variant-numeric: tabular-nums; white-space: nowrap; letter-spacing: 0; }
+
+/* Règle 0–20 */
+.scale { position: relative; height: 22px; }
+.scale.lg { height: 30px; }
+.scale .track { position: absolute; left: 0; right: 0; top: 50%; height: 4px; margin-top: -2px; border-radius: 2px; background: var(--track); }
+.scale .range { position: absolute; top: 50%; height: 4px; margin-top: -2px; background: var(--range); }
+.scale .ten { position: absolute; left: 50%; top: 20%; bottom: 20%; width: 1px; background: var(--muted); opacity: 0.35; }
+.scale .t { position: absolute; top: 22%; bottom: 22%; width: 2px; margin-left: -1px; border-radius: 1px; }
+.scale .t.min { background: var(--min); }
+.scale .t.max { background: var(--max); }
+.scale .t.promo { background: var(--promo); width: 3px; margin-left: -1.5px; top: 14%; bottom: 14%; }
+.scale .t.me { background: var(--me); width: 4px; margin-left: -2px; top: 0; bottom: 0; border-radius: 2px; animation: glow 2.6s ease-in-out infinite; }
+.scale .goalmark { position: absolute; top: -3px; width: 0; height: 0; margin-left: -6px; border-left: 6px solid transparent; border-right: 6px solid transparent; border-top: 8px solid var(--goal-todo); }
+.scale .goalmark.ok { border-top-color: var(--goal-ok); }
+@keyframes glow {
+  0%, 100% { box-shadow: 0 0 3px 0 var(--me-glow); opacity: 0.75; }
+  50% { box-shadow: 0 0 12px 3px var(--me-glow); opacity: 1; }
+}
+.ticks { display: flex; flex-wrap: wrap; gap: 2px 16px; font-size: 0.84rem; font-variant-numeric: tabular-nums; }
+.ticks .min { color: var(--min); } .ticks .max { color: var(--max); } .ticks .promo { color: var(--promo); }
+.legend { display: flex; flex-wrap: wrap; gap: 4px 18px; font-size: 0.82rem; color: var(--muted); }
+.legend i { display: inline-block; width: 3px; height: 13px; border-radius: 1px; margin-right: 6px; vertical-align: -2px; }
+.legend i.tri { width: 0; height: 0; border-radius: 0; border-left: 5px solid transparent; border-right: 5px solid transparent; border-top: 7px solid var(--goal-todo); vertical-align: 0; }
+.legend i.line { width: 16px; height: 2px; vertical-align: 3px; }
+.legend i.dash { width: 16px; height: 0; border-top: 2px dashed var(--promo); vertical-align: 3px; border-radius: 0; }
+
+/* Objectifs */
+.goal-row { display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: center; font-size: 0.86rem; color: var(--muted); }
+.goal-row b { color: var(--ink); font-weight: 500; }
+.goal { display: inline-block; font-size: 0.82rem; border-radius: 999px; padding: 2px 10px; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.goal.todo { border: 1px solid var(--goal-todo); color: var(--goal-todo); }
+.goal.ok { background: var(--goal-ok); color: #2b0a20; font-weight: 600; }
+.goal.mini { font-size: 0.75rem; padding: 0 8px; margin-top: 3px; }
+.link { cursor: pointer; background: none; border: 0; padding: 0; color: var(--me); font-size: 0.84rem; }
+.goal-edit { display: inline-flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.goal-edit input { width: 5.5em; padding: 4px 8px; border-radius: 6px; border: 1px solid var(--line); background: var(--surface-2); font-variant-numeric: tabular-nums; }
+.goal-edit input[aria-invalid="true"] { border-color: var(--min); }
+
+/* UE */
+.ue-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-top: 14px; }
+.ue { background: var(--surface); border-radius: var(--radius); padding: 18px 20px; display: grid; gap: 12px; align-content: start; }
+.ue-top { display: flex; gap: 14px; justify-content: space-between; align-items: start; }
+.ue-top > div:first-child { min-width: 0; }
+.ue-top > div:last-child { flex-shrink: 0; text-align: right; display: grid; gap: 4px; }
+.code { font-size: 0.78rem; color: var(--muted); letter-spacing: 0.03em; }
+.ue .avg { font-size: 2rem; font-weight: 600; line-height: 1; font-variant-numeric: tabular-nums; }
+.ue .foot { display: flex; flex-wrap: wrap; gap: 4px 18px; font-size: 0.88rem; color: var(--muted); }
+.ue .foot b { color: var(--ink); font-weight: 500; }
+
+details > summary { cursor: pointer; list-style: none; }
+details > summary::-webkit-details-marker { display: none; }
+.toggle { font-size: 0.86rem; color: var(--me); }
+.toggle::before { content: "▸ "; }
+details[open] > .toggle::before { content: "▾ "; }
+
+.table-scroll { overflow-x: auto; }
+.comp { width: 100%; border-collapse: collapse; font-size: 0.86rem; margin-top: 8px; font-variant-numeric: tabular-nums; }
+.comp th { text-align: left; font-weight: 400; color: var(--muted); font-size: 0.78rem; padding: 4px 8px; border-bottom: 1px solid var(--line); }
+.comp td { padding: 6px 8px; border-bottom: 1px solid var(--line); }
+.comp .n { text-align: right; white-space: nowrap; }
+.comp .sc { width: 34%; min-width: 110px; }
+.comp tr.empty td { color: var(--muted); }
+
+/* Évolution */
+.evo { display: grid; gap: 16px; }
+.chart-box { background: var(--surface); border-radius: var(--radius); padding: 16px 18px 10px; display: grid; gap: 8px; }
+.chart { position: relative; min-height: 230px; }
+.chart svg { display: block; }
+.chart text { font-family: var(--font); }
+.c-grid { stroke: var(--line); stroke-width: 1; }
+.c-ten { stroke: var(--muted); stroke-width: 1; stroke-dasharray: 2 4; opacity: 0.7; }
+.c-lab { fill: var(--muted); font-size: 11px; }
+.c-x { fill: var(--ink); font-size: 12px; }
+.c-val { fill: var(--ink); font-size: 12px; font-weight: 600; }
+.c-me { stroke: var(--me); stroke-width: 2; fill: none; }
+.c-promo { stroke: var(--promo); stroke-width: 2; fill: none; stroke-dasharray: 6 5; }
+.c-dot-me { fill: var(--me); stroke: var(--surface); stroke-width: 2; }
+.c-dot-me.on { stroke: var(--ink); }
+.c-dot-promo { fill: var(--promo); stroke: var(--surface); stroke-width: 2; }
+.c-cross { stroke: var(--muted); stroke-width: 1; opacity: 0.6; }
+.c-hit { fill: transparent; cursor: pointer; }
+.tip { position: absolute; pointer-events: none; background: var(--surface-2); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; font-size: 0.82rem; white-space: nowrap; transform: translate(-50%, calc(-100% - 10px)); font-variant-numeric: tabular-nums; }
+.tip .k { display: inline-block; width: 10px; height: 2px; margin-right: 6px; vertical-align: 3px; }
+.spark { display: block; }
+.spark path { stroke: var(--me); stroke-width: 2; fill: none; }
+.spark circle { fill: var(--me); }
+.evo-table td:first-child { min-width: 140px; }
+
+/* Matières */
+.section-head { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; justify-content: space-between; }
+.filters { display: flex; gap: 6px; }
+.chip { cursor: pointer; border: 1px solid var(--line); background: transparent; border-radius: 999px; padding: 4px 13px; font-size: 0.86rem; color: var(--muted); }
+.chip[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); color: var(--bg); }
+.subjects { margin-top: 14px; background: var(--surface); border-radius: var(--radius); overflow: hidden; }
+.subj { border-bottom: 1px solid var(--line); }
+.subj:last-child { border-bottom: 0; }
+.subj > summary { display: grid; grid-template-columns: minmax(0, 1fr) 72px minmax(140px, 0.9fr) 92px; gap: 18px; align-items: center; padding: 12px 18px; }
+.subj > summary:hover { background: var(--surface-2); }
+.subj .nm { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.subj .val { text-align: right; font-weight: 600; font-size: 1.05rem; font-variant-numeric: tabular-nums; display: grid; }
+.subj .rk { text-align: right; font-size: 0.88rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+.subj .body { padding: 0 18px 14px; display: grid; gap: 6px; }
+.empty-msg { padding: 16px 18px; margin: 0; color: var(--muted); }
+
+/* Bas de page */
+.about { font-size: 0.9rem; color: var(--muted); }
+.about p { margin: 10px 0 0; max-width: 68ch; }
+.about .settings { display: flex; flex-wrap: wrap; gap: 10px 18px; margin-top: 14px; align-items: center; }
+.about .settings input { width: 4.5em; margin-left: 6px; padding: 4px 8px; border-radius: 6px; border: 1px solid var(--line); background: var(--surface); font-variant-numeric: tabular-nums; }
+.about pre { font-size: 0.75rem; background: var(--surface); border-radius: 8px; padding: 12px; overflow-x: auto; max-height: 340px; color: var(--muted); }
+
+@media (max-width: 720px) {
+  .summary, .ue-grid { grid-template-columns: minmax(0, 1fr); }
+  .big { font-size: 2.5rem; }
+  .subj > summary { grid-template-columns: minmax(0, 1fr) auto; gap: 6px 12px; padding: 12px 16px; }
+  .subj > summary .sc { grid-column: 1 / -1; }
+  .subj > summary .rk { grid-column: 1 / -1; text-align: left; }
+  .subj .body { padding: 0 16px 14px; }
+  .evo-table th:nth-child(2), .evo-table td:nth-child(2) { display: none; }
+  .evo-table td:first-child { min-width: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .scale .t.me { animation: none; box-shadow: 0 0 8px 2px var(--me-glow); opacity: 1; }
+}
+</style>
+
+<div class="wrap">
+  <div class="top-head">
+    <header class="top">
+      <h1>Lecteur de notes R&amp;T</h1>
+      <button class="btn" id="pickBtn" type="button">Ouvrir</button>
+      <input type="file" id="fileInput" accept=".pdf,.json,.zip,application/pdf,application/json,application/zip" multiple hidden>
+    </header>
+
+    <div class="notice" id="notice" aria-live="polite">
+      <b id="noticeTitle"></b>
+      <span id="noticeText"></span>
+    </div>
+
+    <div class="history" id="history"></div>
+  </div>
+
+  <section class="student" id="student"></section>
+
+  <section class="summary" id="summary"></section>
+
+  <section class="evo" id="evo" hidden>
+    <div class="section-head">
+      <h2>Évolution</h2>
+      <div class="legend">
+        <span><i class="line" style="background:var(--me)"></i>ta moyenne générale</span>
+        <span><i class="dash"></i>moyenne promo</span>
+      </div>
+    </div>
+    <div class="chart-box"><div class="chart" id="chart"></div></div>
+    <div class="chart-box">
+      <span class="label">Par compétence, du premier au dernier relevé</span>
+      <div class="table-scroll" id="evoTable"></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-head">
+      <h2>Unités d'enseignement</h2>
+      <div class="legend">
+        <span><i style="background:var(--me)"></i>toi</span>
+        <span><i style="background:var(--promo)"></i>moyenne promo</span>
+        <span><i style="background:var(--max)"></i>meilleure note</span>
+        <span><i style="background:var(--min)"></i>plus basse</span>
+        <span><i class="tri"></i>objectif</span>
+      </div>
+    </div>
+    <div class="ue-grid" id="ues"></div>
+  </section>
+
+  <section>
+    <div class="section-head">
+      <h2>Matières</h2>
+      <div class="filters" role="group" aria-label="Filtrer les matières">
+        <button class="chip" type="button" data-f="all" aria-pressed="true" id="f-all">Tout</button>
+        <button class="chip" type="button" data-f="ressource" aria-pressed="false" id="f-res">Ressources</button>
+        <button class="chip" type="button" data-f="sae" aria-pressed="false" id="f-sae">SAÉ</button>
+      </div>
+    </div>
+    <div class="subjects" id="subjects"></div>
+  </section>
+
+  <section class="about">
+    <details>
+      <summary class="toggle">Comment ça marche</summary>
+      <p>Tes relevés et tes objectifs restent dans ce navigateur, sur cet appareil. Ils sont toujours là si tu fermes la page ou éteins l'ordinateur, mais pas sur un autre appareil ni si tu vides les données du navigateur. « Sauvegarder » télécharge un seul fichier, mes-releves.json, avec tout dedans : rouvre-le avec « Ouvrir » pour tout retrouver. « Ouvrir » accepte aussi plusieurs PDF d'un coup ou un .zip de PDF.</p>
+      <p>Les moyennes de matière et d'UE sont celles du relevé : pondérées par les coefficients, sur les notes déjà saisies. La moyenne générale est la moyenne simple de tes UE notées (le BUT valide chaque UE séparément, à partir de 10). Les flèches ▲ ▼ comparent au relevé précédent du même semestre.</p>
+      <p>Le relevé ne contient pas les notes des autres, seulement la moyenne, la plus haute et la plus basse. Le rang est estimé en supposant une répartition en cloche autour de la moyenne de la promo. C'est un ordre de grandeur, pas un classement officiel.</p>
+      <div class="settings">
+        <label for="promoSize">Élèves dans la promo<input id="promoSize" type="number" min="2" max="200" value="28"></label>
+        <label for="parcoursSize">Élèves dans ton parcours<input id="parcoursSize" type="number" min="2" max="200" value="14"></label>
+      </div>
+      <details style="margin-top:14px">
+        <summary class="toggle">Données lues dans le PDF</summary>
+        <pre id="rawJson"></pre>
+      </details>
+    </details>
+  </section>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="parser.js"></script>
+<script>
+(function () {
+  "use strict";
+  if (window.pdfjsLib) {
+    pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+  }
+
+  var $ = function (id) { return document.getElementById(id); };
+  var LS = { releves: "rt-releves-v1", goals: "rt-goals-v1", dirty: "rt-dirty-v1", settings: "releve-settings" };
+  function lsGet(k, d) { try { var v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch (e) { return d; } }
+  function lsSet(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch (e) { return false; } }
+
+  var state = {
+    history: [],      // [{ key, data }] triés du plus ancien au plus récent
+    cur: null,        // clé du relevé affiché
+    demo: true,
+    goals: {},        // "S5|R509" → 15, "S5|MOY" → 12
+    demoGoals: {},
+    editing: null,    // clé de l'objectif en cours de saisie
+    pendingDelete: null,
+    dirty: false,     // des relevés ou objectifs pas encore dans une sauvegarde
+    filter: "all", promo: 28, parcours: 14
+  };
+
+  var settings = lsGet(LS.settings, {}) || {};
+  if (settings.promo) state.promo = settings.promo;
+  if (settings.parcours) state.parcours = settings.parcours;
+  function saveSettings() { lsSet(LS.settings, { promo: state.promo, parcours: state.parcours }); }
+
+  /* ---------- Exemple fictif (affiché tant qu'aucun relevé n'est ouvert) ---------- */
+  function demoData(late) {
+    function wavg(list) {
+      var s = 0, c = 0;
+      list.forEach(function (x) { if (x.value != null && x.coef) { s += x.value * x.coef; c += x.coef; } });
+      return c ? Math.round(s / c * 100) / 100 : null;
+    }
+    function stat(moy, max) { return { min: moy == null ? 0 : Math.round(Math.max(0, moy - 6.5) * 100) / 100, max: max, moy: moy }; }
+    // e = [libellé, coef, note, moy promo, max promo, seulement dans le 2e relevé]
+    function res(code, name, evals, moy, max) {
+      var comps = evals.map(function (e) {
+        var shown = late || !e[5];
+        var s = stat(shown ? e[3] : null, shown ? e[4] : 0);
+        return { label: e[0], coef: e[1], value: shown ? e[2] : null, min: s.min, max: s.max, moy: s.moy };
+      });
+      var s = stat(moy, max);
+      return { kind: code.indexOf("SAE") === 0 ? "sae" : "ressource", code: code, name: name, coefTotal: null, components: comps,
+        avg: { value: wavg(comps), min: s.min, max: s.max, moy: s.moy } };
+    }
+    var g = [
+      res("R501", "Wifi avancé", [["EVAL0", 1, 14.5, 11.9, 18], ["EVAL1", 1.5, 12, 10.2, 20], ["EVAL2", 1, 9, 6.3, 20], ["TP", 6.2, 10.5, 11.2, 17, true]], late ? 10.9 : 10.4, 18.3),
+      res("R502", "Supervision des réseaux", [["EVAL0", 1, 15, 12.1, 19], ["EVAL1", 2, 13.5, 11.4, 18.5, true]], 11.6, 18.2),
+      res("R503", "Ingénierie de systèmes télécoms", [["EVAL0", 1, 8.5, 9.8, 17]], 9.8, 17),
+      res("R505", "Anglais : Insertion professionnelle 1", [["Oral", 1, 16, 13.2, 19]], 13.2, 19),
+      res("R509", "Outils mathématiques complémentaires", [["DS1", 2, 9.5, 8.9, 17.5], ["DS2", 2, 12.5, 10.1, 18, true]], late ? 9.6 : 8.9, 18),
+      res("R5CYBER10", "Audits de sécurité", [["EVAL0", 1, 11, 10.5, 17.5]], 10.5, 17.5),
+      res("SAE501", "Concevoir, réaliser et présenter une solution technique", [["Livrable1", 1, 12.5, 11.8, 17], ["Livrable2", 1, 14, 12.4, 18, true]], 11.8, 17),
+      res("SAE5CYBER03", "Assurer la sécurisation et la supervision avancées d'un système d'information", [["R501", 1, 10.4, 10.9, 18.3], ["SIMU", 0.6, 13, 12, 18]], 11.3, 18)
+    ];
+    var by = {}; g.forEach(function (x) { by[x.code] = x; });
+    function ue(code, name, parts, moy, max) {
+      var comps = parts.map(function (p) { var src = by[p[0]]; return { label: p[0], coef: p[1], value: src ? src.avg.value : null, min: 0, max: 0, moy: src ? src.avg.moy : null }; });
+      var total = parts.reduce(function (s, p) { return s + p[1]; }, 0);
+      var s = stat(moy, max);
+      return { kind: "ue", code: code, name: name, coefTotal: total, components: comps, avg: { value: wavg(comps), min: s.min, max: s.max, moy: s.moy } };
+    }
+    g.push(ue("UE51", "Administrer les réseaux et l’Internet Niveau 3", [["R501", 5], ["R502", 5], ["R503", 5], ["R509", 2], ["SAE501", 20]], 11.2, 17.4));
+    g.push(ue("UE52", "Connecter les entreprises et les usagers Niveau 3", [["R501", 10], ["R503", 8], ["R505", 2], ["SAE501", 15]], 10.6, 17.1));
+    g.push(ue("UE53", "Créer des outils et applications informatiques pour les R&T Niveau 3", [["R502", 11], ["R505", 5], ["R509", 2], ["SAE501", 17]], 11.9, 17.8));
+    g.push(ue("UE54CYB", "Cyber Sécuriser niveau 2", [["SAE5CYBER03", 32]], 11.3, 18));
+    g.push(ue("UE55CYB", "Cyber Surveiller niveau 2", [["R5CYBER10", 19], ["SAE5CYBER03", 32]], 10.9, 17.6));
+    g.push(ue("UE54IOM", "IOM Etendre niveau 2", [], null, 0));
+    return {
+      student: { name: "Camille EXEMPLE", birthDate: null, id: null },
+      semester: "S5", editedAt: late ? "15/11/2026 12:00" : "15/10/2026 12:00",
+      dates: { start: "01/09/2026", end: "29/01/2027", jury: "03/02/2027" },
+      groups: g, bonus: null, absences: { aj: null, anj: null }
+    };
+  }
+  function loadDemo() {
+    state.demo = true;
+    state.history = [];
+    addEntry(demoData(false));
+    state.cur = addEntry(demoData(true));
+    state.demoGoals = { "S5|R509": 12, "S5|R505": 15, "S5|MOY": 12 };
+  }
+
+  /* ---------- Outils ---------- */
+  function fmt(v, d) { return v == null || isNaN(v) ? "—" : v.toFixed(d == null ? 2 : d).replace(".", ","); }
+  function fmtG(g) { return Math.round(g * 100) % 100 ? fmt(g, Math.round(g * 100) % 10 ? 2 : 1) : String(Math.round(g)); }
+  function esc(s) { return String(s == null ? "" : s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
+  function hasPromo(a) { return a && a.moy != null && a.max != null && a.max > 0; }
+  function low(v) { return v != null && v < 10 ? "low" : ""; }
+  function coefTxt(c) { return c == null ? "—" : fmt(c, c % 1 ? 1 : 0); }
+  function cell(c) { return c.value == null && c.raw ? esc(c.raw) : fmt(c.value); }
+  function parseNum(s) { var t = String(s).trim().replace(",", "."); return /^\d+(\.\d+)?$/.test(t) ? parseFloat(t) : NaN; }
+
+  // Parcours lu dans le code : UE54CYB, R5CYBER09, R3Cyber16, SAE5IOM03…
+  function parcoursOf(code) {
+    var m = /^UE\d+([A-Za-z]+)$/.exec(code) || /^(?:R|SAE)\d([A-Za-z]+)\d/.exec(code);
+    if (!m || /^PORTFOLIO$/i.test(m[1])) return null;
+    var p = m[1].toUpperCase();
+    return p.indexOf("CYB") === 0 ? "Cyber" : p;
+  }
+  // « Administrer les réseaux… Niveau 2 - Administrer un réseau » → titre seul
+  function title(name) { var i = name.indexOf(" - "); return i > 0 ? name.slice(0, i) : name; }
+  // Compétence d'une UE, commune à tous les semestres : UE31 et UE51 → « 1 », UE34CYB et UE54CYB → « 4Cyber »
+  function compKey(code) { var m = /^UE\d(\d+)([A-Za-z]*)$/.exec(code); return m ? m[1] + (m[2] ? parcoursOf(code) : "") : null; }
+  function compName(name) { return title(name).replace(/\s+niveau\s*\d+\s*$/i, ""); }
+
+  // Loi normale
+  function erf(x) {
+    var s = x < 0 ? -1 : 1; x = Math.abs(x);
+    var t = 1 / (1 + 0.3275911 * x);
+    var y = 1 - (((((1.061405429 * t - 1.453152027) * t) + 1.421413741) * t - 0.284496736) * t + 0.254829592) * t * Math.exp(-x * x);
+    return s * y;
+  }
+  function Phi(z) { return 0.5 * (1 + erf(z / Math.SQRT2)); }
+  function invPhi(p) { var lo = -8, hi = 8; for (var i = 0; i < 60; i++) { var m = (lo + hi) / 2; if (Phi(m) < p) lo = m; else hi = m; } return (lo + hi) / 2; }
+  // Écart-type estimé à partir de (max − moyenne) : le max attendu de n tirages est ≈ invPhi((n−0,375)/(n+0,25)) écarts-types.
+  function sigmaFrom(moy, max, n) { var z = invPhi((n - 0.375) / (n + 0.25)); var s = (max - moy) / z; return s > 0.05 ? s : null; }
+  function rankAt(v, moy, s, n) { return Math.min(n, Math.max(2, Math.round(1 + (n - 1) * (1 - Phi((v - moy) / s))))); }
+  function estimateRank(v, moy, max, n, sigma) {
+    if (v == null || moy == null || !n || n < 2) return null;
+    if (max != null && v >= max - 0.005) return { mid: 1, lo: 1, hi: 1, n: n };
+    var s = sigma || (max != null ? sigmaFrom(moy, max, n) : null);
+    if (!s) return null;
+    var a = rankAt(v, moy, s * 0.75, n), b = rankAt(v, moy, s * 1.33, n);
+    return { mid: rankAt(v, moy, s, n), lo: Math.min(a, b), hi: Math.max(a, b), n: n };
+  }
+  function rankText(r) { return !r ? "—" : r.mid === 1 ? "1er / " + r.n : "≈ " + r.mid + "e / " + r.n; }
+  function groupSize(code) { return parcoursOf(code) ? state.parcours : state.promo; }
+
+  /* ---------- Relevés enregistrés ---------- */
+  function relTime(d) {
+    var m = /(\d{2})\/(\d{2})\/(\d{4})(?:\s+(\d{1,2}):(\d{2}))?/.exec(d.editedAt || "");
+    return m ? new Date(+m[3], +m[2] - 1, +m[1], +(m[4] || 0), +(m[5] || 0)).getTime() : 0;
+  }
+  function relLabel(d) { return (d.semester || "?") + " · " + (d.editedAt ? d.editedAt.split(" ")[0] : "sans date"); }
+  function makeKey(data, fileName) { return (data.semester || "S?") + " " + (data.editedAt || fileName || String(Date.now())); }
+  function sortHistory() { state.history.sort(function (a, b) { return relTime(a.data) - relTime(b.data); }); }
+  function addEntry(data, key) {
+    key = key || makeKey(data);
+    state.history = state.history.filter(function (e) { return e.key !== key; });
+    state.history.push({ key: key, data: data });
+    sortHistory();
+    return key;
+  }
+  function curEntry() {
+    return state.history.filter(function (e) { return e.key === state.cur; })[0] || state.history[state.history.length - 1];
+  }
+  // Relevé précédent du même semestre, pour les flèches ▲ ▼
+  function prevEntry(entry) {
+    var t = relTime(entry.data), best = null;
+    state.history.forEach(function (e) {
+      if (e !== entry && e.data.semester === entry.data.semester && relTime(e.data) < t) best = e;
+    });
+    return best;
+  }
+  function persist() {
+    if (state.demo) return;
+    lsSet(LS.releves, state.history);
+    lsSet(LS.goals, state.goals);
+    lsSet(LS.dirty, state.dirty);
+  }
+  function goals() { return state.demo ? state.demoGoals : state.goals; }
+  function gkey(d, code) { return (d.semester || "S?") + "|" + code; }
+
+  /* ---------- Calculs d'un relevé ---------- */
+  function analyse(d) {
+    var groups = d.groups, byCode = {};
+    groups.forEach(function (g) { if (g.kind !== "ue") byCode[g.code.toUpperCase()] = g; });
+    var graded = function (g) { return g.avg.value != null; };
+    var ues = groups.filter(function (g) { return g.kind === "ue"; });
+    var parcours = null;
+    ues.forEach(function (u) { var p = parcoursOf(u.code); if (p && graded(u)) parcours = parcours && parcours !== p ? "?" : p; });
+    if (parcours === "?") parcours = null;
+    var mine = function (g) { var p = parcoursOf(g.code); return !p || !parcours || p === parcours || g.code.indexOf("-") > 0; };
+    var myUes = ues.filter(mine);
+    var gUes = myUes.filter(graded);
+    var mg = gUes.length ? gUes.reduce(function (s, u) { return s + u.avg.value; }, 0) / gUes.length : null;
+    var pUes = gUes.filter(function (u) { return hasPromo(u.avg); });
+    var pm = pUes.length ? pUes.reduce(function (s, u) { return s + u.avg.moy; }, 0) / pUes.length : null;
+    var sig = pUes.map(function (u) { return sigmaFrom(u.avg.moy, u.avg.max, groupSize(u.code)); }).filter(Boolean);
+    var sigma = sig.length ? sig.reduce(function (a, b) { return a + b; }, 0) / sig.length : null;
+    return { byCode: byCode, parcours: parcours, mine: mine, myUes: myUes, gUes: gUes, mg: mg, pm: pm, sigma: sigma, graded: graded };
+  }
+  // Moyenne à obtenir sur les coefficients encore vides pour atteindre target
+  function needOnRest(comps, v, target, total) {
+    total = total || comps.reduce(function (s, c) { return s + (c.coef || 0); }, 0);
+    var filled = comps.reduce(function (s, c) { return s + (c.value != null ? (c.coef || 0) : 0); }, 0);
+    if (v == null || !filled || !(total > filled)) return null;
+    return (target * total - v * filled) / (total - filled);
+  }
+  function needText(req, target) {
+    if (req == null) return "";
+    var t = fmtG(target);
+    return req <= 0 ? t + " assuré" : req > 20 ? t + " hors d'atteinte ce semestre" : "Pour " + t + " : <b>" + fmt(req) + "</b> sur le reste";
+  }
+  function deltaHtml(v, p, since) {
+    if (v == null || p == null) return "";
+    var d = v - p;
+    var txt = Math.abs(d) < 0.005 ? "= stable" : (d > 0 ? "▲ " : "▼ ") + fmt(Math.abs(d));
+    return '<span class="delta" title="Depuis le relevé du ' + esc(since) + '">' + txt + "</span>";
+  }
+
+  /* ---------- Objectifs ---------- */
+  function goalState(g, v) { return g == null ? null : v != null && v >= g - 0.005 ? "ok" : "todo"; }
+  function goalHtml(key, v) {
+    var g = goals()[key];
+    if (state.editing === key) {
+      return '<span class="goal-edit"><label for="goalInput">Objectif</label>' +
+        '<input id="goalInput" type="text" inputmode="decimal" autocomplete="off" placeholder="ex. 15" value="' + (g != null ? fmtG(g) : "") + '" data-key="' + esc(key) + '"> / 20' +
+        '<button class="btn sm" type="button" data-goal-save="' + esc(key) + '">OK</button>' +
+        (g != null ? '<button class="link" type="button" data-goal-remove="' + esc(key) + '">Retirer</button>' : "") +
+        '<button class="link" type="button" data-goal-cancel>Annuler</button></span>';
+    }
+    if (g == null) return '<button class="link" type="button" data-goal-edit="' + esc(key) + '">+ Fixer un objectif</button>';
+    var st = goalState(g, v);
+    var txt = st === "ok" ? "Objectif " + fmtG(g) + " atteint" : v == null ? "Objectif " + fmtG(g) : "Objectif " + fmtG(g) + " · encore +" + fmt(g - v);
+    return '<span class="goal ' + st + '">' + txt + '</span><button class="link" type="button" data-goal-edit="' + esc(key) + '">modifier</button>';
+  }
+
+  // Règle 0–20 : plage min→max, traits min (rouge), max (vert), promo (orange), toi (bleu), objectif (triangle).
+  function scale(v, a, lg, goal) {
+    var pct = function (x) { return Math.max(0, Math.min(100, x / 20 * 100)); };
+    var h = '<div class="scale' + (lg ? " lg" : "") + '" aria-hidden="true"><div class="track"></div><div class="ten"></div>';
+    if (hasPromo(a)) {
+      var lo = a.min == null ? 0 : a.min;
+      h += '<div class="range" style="left:' + pct(lo) + '%;width:' + (pct(a.max) - pct(lo)) + '%"></div>' +
+        (a.min != null ? '<div class="t min" style="left:' + pct(a.min) + '%"></div>' : "") +
+        '<div class="t max" style="left:' + pct(a.max) + '%"></div>' +
+        '<div class="t promo" style="left:' + pct(a.moy) + '%"></div>';
+    }
+    if (goal != null) h += '<div class="goalmark ' + goalState(goal, v) + '" style="left:' + pct(goal) + '%"></div>';
+    if (v != null) h += '<div class="t me" style="left:' + pct(v) + '%"></div>';
+    return h + "</div>";
+  }
+
+  function linkName(label, byCode) {
+    var key = label.toUpperCase();
+    if (byCode[key]) return byCode[key].name;
+    for (var c in byCode) { if (c.split("-").indexOf(key) >= 0) return byCode[c].name; }
+    return "";
+  }
+
+  /* ---------- Rendu ---------- */
+  function renderHistory() {
+    var cur = curEntry();
+    var chips = state.history.map(function (e) {
+      var on = cur && e.key === cur.key, confirm = state.pendingDelete === e.key;
+      return '<span class="rel' + (on ? " on" : "") + '"><button type="button" class="pick" data-rel="' + esc(e.key) + '" aria-pressed="' + on + '">' + esc(relLabel(e.data)) + '</button>' +
+        (state.demo ? "" : '<button type="button" class="x' + (confirm ? " confirm" : "") + '" data-del="' + esc(e.key) + '" aria-label="Retirer ce relevé">' + (confirm ? "Retirer ?" : "×") + "</button>") + "</span>";
+    }).join("");
+    $("history").innerHTML = '<span class="label">' + (state.demo ? "Relevés d'exemple" : "Mes relevés") + "</span>" + chips +
+      (state.demo ? "" : '<button type="button" class="btn ghost sm" id="saveBtn">Sauvegarder</button>' +
+        (state.dirty ? '<span class="hint">Des changements ne sont pas encore dans ta sauvegarde.</span>' : ""));
+  }
+
+  function render() {
+    var open = [].map.call(document.querySelectorAll("details[data-k][open]"), function (d) { return d.getAttribute("data-k"); });
+    renderHistory();
+    var entry = curEntry();
+    var d = entry.data;
+    var A = analyse(d);
+    var prev = prevEntry(entry), P = prev ? analyse(prev.data) : null;
+    var since = prev ? (prev.data.editedAt || "").split(" ")[0] : "";
+    var prevVal = function (code) {
+      if (!prev) return null;
+      var g = prev.data.groups.filter(function (x) { return x.code === code; })[0];
+      return g ? g.avg.value : null;
+    };
+    var G = goals();
+
+    var meta = [d.semester, A.parcours ? "Parcours " + A.parcours : null, d.editedAt ? "relevé du " + d.editedAt.split(" ")[0] : null].filter(Boolean);
+    $("student").innerHTML = '<div class="who">' + esc(d.student.name || "Étudiant") + '</div><div class="meta">' + esc(meta.join(" · ")) + "</div>";
+
+    // Synthèse
+    var rG = A.mg != null && A.pm != null ? estimateRank(A.mg, A.pm, null, state.promo, A.sigma) : null;
+    var diff = A.mg != null && A.pm != null ? A.mg - A.pm : null;
+    var kMoy = gkey(d, "MOY");
+    $("summary").innerHTML =
+      '<div class="tile"><span class="label">Moyenne générale</span>' +
+        '<div class="big ' + low(A.mg) + '">' + fmt(A.mg) + ' <small>/ 20</small> ' + deltaHtml(A.mg, P && P.mg, since) + '</div>' +
+        '<div class="ticks"><span class="promo">promo ' + fmt(A.pm) + '</span>' +
+        (diff != null ? '<span class="muted">' + (diff >= 0 ? "+" : "−") + fmt(Math.abs(diff)) + ' par rapport à la promo</span>' : "") + '</div>' +
+        '<div class="goal-row">' + goalHtml(kMoy, A.mg) + '</div></div>' +
+      '<div class="tile"><span class="label">Classement estimé</span>' +
+        '<div class="big">' + (rG ? (rG.mid === 1 ? "1<small>er</small>" : rG.mid + "<small>e</small>") : "—") + ' <small>sur ' + state.promo + '</small></div>' +
+        '<div class="ticks muted">' + (rG && rG.lo !== rG.hi ? "Probablement entre " + rG.lo + "e et " + rG.hi + "e" : rG ? "" : "Pas encore assez de notes") + '</div></div>';
+
+    renderEvo();
+
+    // UE
+    $("ues").innerHTML = A.myUes.map(function (u) {
+      var v = u.avg.value, a = u.avg, key = gkey(d, u.code), goal = G[key];
+      var target = goal != null ? goal : 10;
+      var total = u.coefTotal || u.components.reduce(function (s, c) { return s + (c.coef || 0); }, 0);
+      var foot = v == null ? "Pas encore de note" : needText(needOnRest(u.components, v, target, total), target);
+      var r = hasPromo(a) ? estimateRank(v, a.moy, a.max, groupSize(u.code)) : null;
+      var rows = u.components.map(function (c) {
+        return '<tr class="' + (c.value == null ? "empty" : "") + '"><td>' + esc(linkName(c.label, A.byCode) || c.label) + ' <span class="muted">' + esc(c.label) + '</span></td>' +
+          '<td class="n">' + coefTxt(c.coef) + '</td><td class="n ' + low(c.value) + '">' + cell(c) + '</td></tr>';
+      }).join("");
+      return '<article class="ue">' +
+        '<div class="ue-top"><div><div class="code">' + esc(u.code) + '</div><h3>' + esc(title(u.name)) + '</h3></div>' +
+        '<div><div class="avg ' + (v == null ? "muted" : low(v)) + '">' + fmt(v) + '</div>' + deltaHtml(v, prevVal(u.code), since) + '</div></div>' +
+        scale(v, a, true, goal) +
+        (hasPromo(a) ? '<div class="ticks"><span class="min">' + fmt(a.min) + '</span><span class="promo">promo ' + fmt(a.moy) + '</span><span class="max">' + fmt(a.max) + '</span></div>' : "") +
+        '<div class="foot">' + (r ? '<span>Rang <b>' + rankText(r) + '</b></span>' : "") + (foot ? "<span>" + foot + "</span>" : "") + '</div>' +
+        '<div class="goal-row">' + goalHtml(key, v) + '</div>' +
+        (u.components.length ? '<details data-k="u:' + esc(u.code) + '"><summary class="toggle">Détail</summary><div class="table-scroll"><table class="comp"><thead><tr><th>Matière</th><th class="n">Coef.</th><th class="n">Toi</th></tr></thead><tbody>' + rows + '</tbody></table></div></details>' : "") +
+        '</article>';
+    }).join("");
+
+    // Matières notées
+    var list = d.groups.filter(function (g) {
+      return g.kind !== "ue" && A.mine(g) && (state.filter === "all" || g.kind === state.filter) &&
+        (A.graded(g) || g.components.some(function (c) { return c.value != null; }));
+    });
+    $("subjects").innerHTML = list.length ? list.map(function (g) {
+      var v = g.avg.value, a = g.avg, key = gkey(d, g.code), goal = G[key];
+      var r = hasPromo(a) ? estimateRank(v, a.moy, a.max, groupSize(g.code)) : null;
+      var rows = g.components.map(function (c) {
+        return '<tr class="' + (c.value == null ? "empty" : "") + '"><td>' + esc(c.label) + '</td><td class="n">' + coefTxt(c.coef) + '</td>' +
+          '<td class="n ' + low(c.value) + '">' + cell(c) + '</td><td class="n" style="color:var(--promo)">' + fmt(c.moy) + '</td>' +
+          '<td class="sc">' + scale(c.value, { min: c.min, max: c.max, moy: c.moy }) + '</td></tr>';
+      }).join("");
+      var need = goal != null && goalState(goal, v) === "todo" ? needText(needOnRest(g.components, v, goal), goal) : "";
+      var body = '<div class="goal-row">' + goalHtml(key, v) + (need ? "<span>" + need + "</span>" : "") + '</div>' +
+        (g.components.length ?
+          '<div class="table-scroll"><table class="comp"><thead><tr><th>Évaluation</th><th class="n">Coef.</th><th class="n">Toi</th><th class="n">Promo</th><th></th></tr></thead><tbody>' + rows + '</tbody></table></div>' :
+          '<p class="muted" style="margin:0;font-size:.88rem">Pas de détail des évaluations pour cette matière.</p>');
+      var badge = goal != null ? '<span class="goal mini ' + goalState(goal, v) + '">Objectif ' + fmtG(goal) + (goalState(goal, v) === "ok" ? " atteint" : "") + '</span>' : "";
+      return '<details class="subj" data-k="s:' + esc(g.code) + '"><summary>' +
+        '<span style="min-width:0"><span class="code">' + esc(g.code) + '</span><span class="nm">' + esc(g.name || g.code) + '</span>' + badge + '</span>' +
+        '<span class="val ' + low(v) + '">' + fmt(v) + deltaHtml(v, prevVal(g.code), since) + '</span>' +
+        '<span class="sc">' + scale(v, a, false, goal) + '</span>' +
+        '<span class="rk">' + rankText(r) + '</span>' +
+        '</summary><div class="body">' + body + '</div></details>';
+    }).join("") : '<p class="empty-msg">Aucune note pour l\'instant.</p>';
+
+    $("rawJson").textContent = JSON.stringify(d, null, 2);
+
+    [].forEach.call(document.querySelectorAll("details[data-k]"), function (el) {
+      if (open.indexOf(el.getAttribute("data-k")) >= 0) el.open = true;
+    });
+    if (state.editing) { var inp = $("goalInput"); if (inp) { inp.focus(); inp.select(); } }
+  }
+
+  /* ---------- Évolution ---------- */
+  var chartPts = null;
+  function renderEvo() {
+    if (state.history.length < 2) { $("evo").hidden = true; chartPts = null; return; }
+    $("evo").hidden = false;
+    var cur = curEntry();
+    var analyses = state.history.map(function (e) { return analyse(e.data); });
+    chartPts = state.history.map(function (e, i) {
+      return { key: e.key, sem: e.data.semester || "?", date: e.data.editedAt ? e.data.editedAt.split(" ")[0] : "", toi: analyses[i].mg, promo: analyses[i].pm, on: e.key === cur.key };
+    });
+    drawChart();
+
+    // Par compétence (UE31 → UE51 : même compétence, niveau suivant)
+    var comps = {}, order = [];
+    state.history.forEach(function (e, i) {
+      analyses[i].myUes.forEach(function (u) {
+        var k = compKey(u.code);
+        if (!k || u.avg.value == null) return;
+        if (!comps[k]) { comps[k] = { name: "", vals: [] }; order.push(k); }
+        comps[k].name = compName(u.name);
+        comps[k].vals[i] = u.avg.value;
+      });
+    });
+    order.sort();
+    $("evoTable").innerHTML = order.length ? '<table class="comp evo-table"><thead><tr><th>Compétence</th><th>Tendance</th><th class="n">Premier → dernier</th><th class="n">Écart</th></tr></thead><tbody>' +
+      order.map(function (k) {
+        var vals = comps[k].vals, idx = [];
+        for (var i = 0; i < state.history.length; i++) if (vals[i] != null) idx.push(i);
+        var first = vals[idx[0]], last = vals[idx[idx.length - 1]];
+        return '<tr><td>' + esc(comps[k].name) + '</td><td>' + spark(vals, state.history.length) + '</td>' +
+          '<td class="n">' + (idx.length > 1 ? fmt(first) + " → " : "") + '<span class="' + low(last) + '">' + fmt(last) + '</span></td>' +
+          '<td class="n">' + (idx.length > 1 ? deltaHtml(last, first, "premier relevé") : '<span class="delta">un seul relevé</span>') + '</td></tr>';
+      }).join("") + "</tbody></table>" : '<p class="muted" style="margin:0">Pas encore de moyenne d\'UE à comparer.</p>';
+  }
+
+  function spark(vals, n) {
+    var W = 96, H = 26, pts = [];
+    for (var i = 0; i < n; i++) if (vals[i] != null) pts.push([i, vals[i]]);
+    var vs = pts.map(function (p) { return p[1]; });
+    var lo = Math.min.apply(null, vs) - 1, hi = Math.max.apply(null, vs) + 1;
+    var x = function (i) { return n === 1 ? W / 2 : 4 + i * (W - 8) / (n - 1); };
+    var y = function (v) { return 4 + (hi - v) / (hi - lo) * (H - 8); };
+    var dPath = pts.map(function (p, j) { return (j ? "L" : "M") + x(p[0]).toFixed(1) + " " + y(p[1]).toFixed(1); }).join("");
+    var lastP = pts[pts.length - 1];
+    return '<svg class="spark" width="' + W + '" height="' + H + '" viewBox="0 0 ' + W + " " + H + '" aria-hidden="true"><path d="' + dPath + '"/>' +
+      '<circle cx="' + x(lastP[0]).toFixed(1) + '" cy="' + y(lastP[1]).toFixed(1) + '" r="3"/></svg>';
+  }
+
+  function drawChart() {
+    var el = $("chart"), pts = chartPts;
+    if (!pts) return;
+    var W = Math.max(260, el.clientWidth || 600), H = 230, L = 34, R = 14, T = 22, B = 44;
+    var vals = [];
+    pts.forEach(function (p) { if (p.toi != null) vals.push(p.toi); if (p.promo != null) vals.push(p.promo); });
+    if (!vals.length) { el.innerHTML = '<p class="muted">Pas encore de moyenne à comparer.</p>'; return; }
+    var lo = Math.max(0, Math.floor(Math.min.apply(null, vals)) - 1), hi = Math.min(20, Math.ceil(Math.max.apply(null, vals)) + 1);
+    if (hi - lo < 4) { lo = Math.max(0, Math.min(lo, 16)); hi = lo + 4; }
+    var step = hi - lo > 10 ? 4 : hi - lo > 4 ? 2 : 1;
+    var x0 = L + 26, x1 = W - R - 26;
+    var x = function (i) { return pts.length === 1 ? (x0 + x1) / 2 : x0 + i * (x1 - x0) / (pts.length - 1); };
+    var y = function (v) { return T + (hi - v) / (hi - lo) * (H - T - B); };
+    var s = '<svg width="' + W + '" height="' + H + '" viewBox="0 0 ' + W + " " + H + '" role="img" aria-label="Évolution de la moyenne générale">';
+    for (var g = Math.ceil(lo / step) * step; g <= hi; g += step) {
+      s += '<line class="c-grid" x1="' + L + '" x2="' + (W - R) + '" y1="' + y(g) + '" y2="' + y(g) + '"/>' +
+        '<text class="c-lab" x="' + (L - 8) + '" y="' + (y(g) + 4) + '" text-anchor="end">' + g + "</text>";
+    }
+    if (10 > lo && 10 < hi) s += '<line class="c-ten" x1="' + L + '" x2="' + (W - R) + '" y1="' + y(10) + '" y2="' + y(10) + '"/>';
+    function path(k) {
+      var dd = "", on = false;
+      pts.forEach(function (p, i) { if (p[k] == null) { on = false; return; } dd += (on ? "L" : "M") + x(i).toFixed(1) + " " + y(p[k]).toFixed(1); on = true; });
+      return dd;
+    }
+    s += '<path class="c-promo" d="' + path("promo") + '"/><path class="c-me" d="' + path("toi") + '"/>';
+    pts.forEach(function (p, i) {
+      if (p.promo != null) s += '<circle class="c-dot-promo" cx="' + x(i) + '" cy="' + y(p.promo) + '" r="4"/>';
+      if (p.toi != null) s += '<circle class="c-dot-me' + (p.on ? " on" : "") + '" cx="' + x(i) + '" cy="' + y(p.toi) + '" r="5"/>';
+    });
+    // Étiquettes : une sur deux (ou moins) quand les points sont serrés
+    var gap = pts.length > 1 ? (x1 - x0) / (pts.length - 1) : 999, every = Math.max(1, Math.ceil(64 / gap));
+    pts.forEach(function (p, i) {
+      if (i % every && i !== pts.length - 1) return;
+      s += '<text class="c-x" x="' + x(i) + '" y="' + (H - 24) + '" text-anchor="middle">' + esc(p.sem) + "</text>" +
+        '<text class="c-lab" x="' + x(i) + '" y="' + (H - 9) + '" text-anchor="middle">' + esc(p.date.slice(0, 6) + p.date.slice(8)) + "</text>";
+    });
+    var li = -1;
+    pts.forEach(function (p, i) { if (p.toi != null) li = i; });
+    if (li >= 0) s += '<text class="c-val" x="' + x(li) + '" y="' + (y(pts[li].toi) - 11) + '" text-anchor="middle">' + fmt(pts[li].toi) + "</text>";
+    s += '<line class="c-cross" id="cross" x1="-10" x2="-10" y1="' + T + '" y2="' + (H - B) + '"/>';
+    pts.forEach(function (p, i) {
+      var w = Math.min(gap, W);
+      s += '<rect class="c-hit" data-i="' + i + '" x="' + (x(i) - w / 2) + '" y="0" width="' + w + '" height="' + H + '"/>';
+    });
+    el.innerHTML = s + '</svg><div class="tip" id="tip" hidden></div>';
+
+    function show(i) {
+      var p = pts[i], tip = $("tip"), cross = $("cross");
+      cross.setAttribute("x1", x(i)); cross.setAttribute("x2", x(i));
+      tip.innerHTML = "<b>" + esc(p.sem) + " · " + esc(p.date) + "</b><br>" +
+        '<span class="k" style="background:var(--me)"></span>Toi ' + fmt(p.toi) + "<br>" +
+        '<span class="k" style="background:var(--promo)"></span>Promo ' + fmt(p.promo);
+      tip.hidden = false;
+      var left = Math.max(70, Math.min(W - 70, x(i)));
+      tip.style.left = left + "px";
+      tip.style.top = y(p.toi != null ? p.toi : p.promo || lo) + "px";
+    }
+    function hide() { $("tip").hidden = true; $("cross").setAttribute("x1", -10); $("cross").setAttribute("x2", -10); }
+    el.onmousemove = function (e) { var r = e.target.closest && e.target.closest(".c-hit"); if (r) show(+r.getAttribute("data-i")); };
+    el.onclick = function (e) {
+      var r = e.target.closest && e.target.closest(".c-hit");
+      if (r) { state.cur = pts[+r.getAttribute("data-i")].key; state.editing = null; render(); }
+    };
+    el.onmouseleave = hide;
+  }
+  var resizeTimer = null;
+  window.addEventListener("resize", function () { clearTimeout(resizeTimer); resizeTimer = setTimeout(drawChart, 150); });
+
+  /* ---------- Messages ---------- */
+  function notice(kind, titleHtml, text) {
+    $("notice").classList.toggle("error", kind === "error");
+    $("noticeTitle").innerHTML = titleHtml;
+    $("noticeText").textContent = text || "";
+  }
+  function noticeIdle() {
+    if (state.demo) {
+      notice("", "Exemple avec des notes fictives.", "Ouvre un ou plusieurs relevés PDF, ta sauvegarde mes-releves.json ou un .zip de PDF. Tout est lu dans ton navigateur, rien n'est envoyé.");
+    } else {
+      var n = state.history.length;
+      notice("", n + " relevé" + (n > 1 ? "s" : "") + " enregistré" + (n > 1 ? "s" : "") + " dans ce navigateur.",
+        state.dirty ? "Clique sur « Sauvegarder » pour en garder une copie dans un fichier : elle te servira sur un autre appareil ou si le navigateur est vidé." : "Pour un nouveau relevé, ouvre ou glisse le PDF ici.");
+    }
+  }
+
+  /* ---------- Ouverture des fichiers : PDF, sauvegarde .json, .zip ---------- */
+  var jszipP = null;
+  function loadJSZip() {
+    if (window.JSZip) return Promise.resolve(window.JSZip);
+    if (!jszipP) jszipP = new Promise(function (res, rej) {
+      var sc = document.createElement("script");
+      sc.src = "https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js";
+      sc.onload = function () { res(window.JSZip); };
+      sc.onerror = function () { jszipP = null; rej(new Error("le lecteur de .zip n'a pas pu se charger")); };
+      document.head.appendChild(sc);
+    });
+    return jszipP;
+  }
+  function leaveDemo() {
+    if (!state.demo) return;
+    state.demo = false;
+    state.history = [];
+    state.cur = null;
+  }
+  function importBackup(obj, acc) {
+    if (!obj || obj.app !== "lecteur-notes-rt" || !Array.isArray(obj.releves)) throw new Error("ce fichier .json n'est pas une sauvegarde du lecteur de notes");
+    leaveDemo();
+    obj.releves.forEach(function (r) {
+      if (r && r.data && Array.isArray(r.data.groups)) { acc.last = addEntry(r.data, r.key); acc.restored++; }
+    });
+    var gs = obj.goals || {};
+    Object.keys(gs).forEach(function (k) { if (typeof gs[k] === "number") state.goals[k] = gs[k]; });
+  }
+  async function processBuffer(buf, name, acc) {
+    var head = new Uint8Array(buf.slice(0, 5));
+    var isPdf = String.fromCharCode.apply(null, head) === "%PDF-";
+    if (/\.json$/i.test(name) && !isPdf) {
+      importBackup(JSON.parse(new TextDecoder().decode(buf)), acc);
+      return;
+    }
+    if (!isPdf) throw new Error("format non reconnu (PDF, .json ou .zip attendu)");
+    if (!window.pdfjsLib) throw new Error("le lecteur PDF n'a pas pu se charger, vérifie ta connexion");
+    var doc = await pdfjsLib.getDocument({ data: new Uint8Array(buf) }).promise;
+    var data = ReleveParser.parseReleve(await ReleveParser.extractPages(doc));
+    leaveDemo();
+    acc.last = addEntry(data, makeKey(data, name));
+    acc.added++;
+  }
+  async function processFile(file, acc) {
+    var name = file.name || "fichier";
+    try {
+      if (/\.zip$/i.test(name)) {
+        var JSZip = await loadJSZip();
+        var zip = await JSZip.loadAsync(await file.arrayBuffer());
+        var names = Object.keys(zip.files).filter(function (n) { return !zip.files[n].dir && !/__MACOSX/.test(n) && /\.(pdf|json)$/i.test(n); });
+        if (!names.length) throw new Error("aucun PDF dans le .zip");
+        for (var i = 0; i < names.length; i++) {
+          var short = names[i].split("/").pop();
+          try { await processBuffer(await zip.files[names[i]].async("arraybuffer"), short, acc); }
+          catch (err) { acc.errors.push(short + " : " + (err && err.message || err)); }
+        }
+        return;
+      }
+      await processBuffer(await file.arrayBuffer(), name, acc);
+    } catch (err) {
+      console.error(err);
+      acc.errors.push(name + " : " + (err && err.message || err));
+    }
+  }
+  async function handleFiles(fileList) {
+    var files = [].slice.call(fileList || []);
+    if (!files.length) return;
+    notice("", "Lecture en cours…", "");
+    var acc = { added: 0, restored: 0, errors: [], last: null };
+    for (var i = 0; i < files.length; i++) await processFile(files[i], acc);
+    if (acc.added || acc.restored) {
+      state.cur = acc.last || state.cur;
+      if (acc.added) state.dirty = true;
+      state.editing = null;
+      persist();
+      render();
+      var parts = [];
+      if (acc.added) parts.push(acc.added + " relevé" + (acc.added > 1 ? "s" : "") + " ajouté" + (acc.added > 1 ? "s" : ""));
+      if (acc.restored) parts.push("sauvegarde ouverte (" + acc.restored + " relevé" + (acc.restored > 1 ? "s" : "") + ")");
+      var first = parts.join(", ");
+      notice("", first.charAt(0).toUpperCase() + first.slice(1) + ".",
+        (acc.errors.length ? "Non lu : " + acc.errors.join(" ; ") + ". " : "") +
+        (state.dirty ? "Clique sur « Sauvegarder » pour garder une copie de tous tes relevés dans un fichier." : "Tes relevés sont enregistrés dans ce navigateur."));
+    } else {
+      notice("error", "Impossible de lire " + (files.length > 1 ? "ces fichiers" : "ce fichier") + ".", acc.errors.join(" ; "));
+    }
+  }
+
+  /* ---------- Sauvegarde dans un fichier ---------- */
+  // Dans claude.ai, le téléchargement passe par la capacité downloads ; ailleurs (GitHub Pages, fichier local), par un lien.
+  var downloadsP = window.claude && typeof window.claude.use === "function"
+    ? window.claude.use("downloads").catch(function () { return null; }) : Promise.resolve(null);
+  async function saveBackup() {
+    var name = "mes-releves.json";
+    var json = JSON.stringify({ app: "lecteur-notes-rt", version: 1, savedAt: new Date().toISOString(), releves: state.history, goals: state.goals });
+    var dl = await downloadsP;
+    if (dl) {
+      try { await dl.save({ filename: name, data: json }); }
+      catch (err) {
+        if (!err || err.code !== "declined") notice("error", "La sauvegarde n'a pas pu être téléchargée.", err && err.message ? err.message : "");
+        return;
+      }
+    } else {
+      var url = URL.createObjectURL(new Blob([json], { type: "application/json" }));
+      var a = document.createElement("a");
+      a.href = url; a.download = name;
+      document.body.appendChild(a); a.click();
+      setTimeout(function () { URL.revokeObjectURL(url); a.remove(); }, 2000);
+    }
+    state.dirty = false;
+    persist();
+    renderHistory();
+    notice("", "Sauvegarde téléchargée : " + name + ".", "Garde ce fichier, par exemple avec tes PDF. Pour tout retrouver, ouvre-le avec « Ouvrir ».");
+  }
+
+  /* ---------- Événements ---------- */
+  var input = $("fileInput");
+  $("pickBtn").addEventListener("click", function () { input.click(); });
+  input.addEventListener("change", function () { var f = input.files; handleFiles(f).then(function () { input.value = ""; }); });
+  ["dragenter", "dragover"].forEach(function (ev) {
+    document.addEventListener(ev, function (e) { e.preventDefault(); $("notice").classList.add("over"); });
+  });
+  ["dragleave", "drop"].forEach(function (ev) {
+    document.addEventListener(ev, function (e) { e.preventDefault(); if (ev === "drop" || e.target === document.documentElement) $("notice").classList.remove("over"); });
+  });
+  document.addEventListener("drop", function (e) { if (e.dataTransfer) handleFiles(e.dataTransfer.files); });
+
+  function saveGoal(key) {
+    var inp = $("goalInput");
+    var g = parseNum(inp ? inp.value : "");
+    if (isNaN(g) || g < 0 || g > 20) { if (inp) { inp.setAttribute("aria-invalid", "true"); inp.focus(); } return; }
+    goals()[key] = Math.round(g * 100) / 100;
+    state.editing = null;
+    if (!state.demo) { state.dirty = true; persist(); }
+    render();
+  }
+
+  document.addEventListener("click", function (e) {
+    var t = e.target.closest("[data-goal-edit],[data-goal-save],[data-goal-remove],[data-goal-cancel],[data-rel],[data-del],#saveBtn");
+    if (state.pendingDelete && (!t || !t.hasAttribute("data-del"))) { state.pendingDelete = null; renderHistory(); }
+    if (!t) return;
+    e.preventDefault();
+    if (t.id === "saveBtn") { saveBackup(); return; }
+    if (t.hasAttribute("data-goal-edit")) { state.editing = t.getAttribute("data-goal-edit"); render(); return; }
+    if (t.hasAttribute("data-goal-cancel")) { state.editing = null; render(); return; }
+    if (t.hasAttribute("data-goal-save")) { saveGoal(t.getAttribute("data-goal-save")); return; }
+    if (t.hasAttribute("data-goal-remove")) {
+      delete goals()[t.getAttribute("data-goal-remove")];
+      state.editing = null;
+      if (!state.demo) { state.dirty = true; persist(); }
+      render(); return;
+    }
+    if (t.hasAttribute("data-rel")) { state.cur = t.getAttribute("data-rel"); state.editing = null; render(); return; }
+    if (t.hasAttribute("data-del")) {
+      var k = t.getAttribute("data-del");
+      if (state.pendingDelete !== k) { state.pendingDelete = k; renderHistory(); return; }
+      state.pendingDelete = null;
+      state.history = state.history.filter(function (x) { return x.key !== k; });
+      state.dirty = true;
+      if (!state.history.length) { lsSet(LS.releves, []); loadDemo(); }
+      else { if (state.cur === k) state.cur = state.history[state.history.length - 1].key; persist(); }
+      render(); noticeIdle();
+    }
+  });
+  document.addEventListener("keydown", function (e) {
+    if (!e.target || e.target.id !== "goalInput") return;
+    if (e.key === "Enter") { e.preventDefault(); saveGoal(e.target.getAttribute("data-key")); }
+    else if (e.key === "Escape") { state.editing = null; render(); }
+  });
+
+  document.querySelectorAll(".chip[data-f]").forEach(function (b) {
+    b.addEventListener("click", function () {
+      state.filter = b.getAttribute("data-f");
+      document.querySelectorAll(".chip[data-f]").forEach(function (x) { x.setAttribute("aria-pressed", String(x === b)); });
+      render();
+    });
+  });
+  $("promoSize").value = state.promo;
+  $("parcoursSize").value = state.parcours;
+  $("promoSize").addEventListener("change", function (e) { var v = parseInt(e.target.value, 10); if (v >= 2) { state.promo = v; saveSettings(); render(); } });
+  $("parcoursSize").addEventListener("change", function (e) { var v = parseInt(e.target.value, 10); if (v >= 2) { state.parcours = v; saveSettings(); render(); } });
+
+  /* ---------- Démarrage ---------- */
+  var saved = lsGet(LS.releves, []);
+  state.goals = lsGet(LS.goals, {}) || {};
+  state.dirty = !!lsGet(LS.dirty, false);
+  saved = Array.isArray(saved) ? saved.filter(function (e) { return e && e.key && e.data && Array.isArray(e.data.groups); }) : [];
+  if (saved.length) {
+    state.demo = false;
+    state.history = saved;
+    sortHistory();
+    state.cur = state.history[state.history.length - 1].key;
+  } else {
+    loadDemo();
+  }
+  render();
+  noticeIdle();
+})();
+</script>
+<!-- ARTIFACT:END -->
+</body>
+</html>
